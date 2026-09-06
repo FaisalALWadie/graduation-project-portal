@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -31,6 +32,12 @@ export default async function LoginPage({
             </p>
           )}
           <LoginForm />
+          <p className="text-center text-sm text-muted-foreground">
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="font-medium text-foreground underline underline-offset-4">
+              Create one
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>

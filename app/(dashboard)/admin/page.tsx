@@ -1,6 +1,6 @@
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
-import { assignStudentToTeam } from "@/lib/actions/admin";
+import { assignToTeam } from "@/lib/actions/admin";
 import { DashboardHeader } from "@/components/dashboard-header";
 import {
   Card,
@@ -42,10 +42,11 @@ export default async function AdminDashboardPage() {
       <main className="flex-1 space-y-6 p-6">
         <Card>
           <CardHeader>
-            <CardTitle>Students awaiting team assignment</CardTitle>
+            <CardTitle>Accounts awaiting team assignment</CardTitle>
             <CardDescription>
-              New self-registered accounts land here with no team until you
-              assign them — that&apos;s the approval step.
+              New self-registered accounts (students and advisors) land here
+              with no team until you assign them — that&apos;s the approval
+              step. The badge shows what they picked when they signed up.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -62,21 +63,18 @@ export default async function AdminDashboardPage() {
                       key={p.id}
                       className="flex items-center justify-between py-3"
                     >
-                      <div>
-                        <p className="font-medium">{p.full_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Signed up{" "}
-                          {new Date(p.created_at).toLocaleDateString()}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <p className="font-medium">{p.full_name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Signed up{" "}
+                            {new Date(p.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Badge variant="secondary">{p.role}</Badge>
                       </div>
                       {team ? (
-                        <form
-                          action={assignStudentToTeam.bind(
-                            null,
-                            p.id,
-                            team.id,
-                          )}
-                        >
+                        <form action={assignToTeam.bind(null, p.id, team.id)}>
                           <Button type="submit" size="sm">
                             Assign to {team.project_title}
                           </Button>

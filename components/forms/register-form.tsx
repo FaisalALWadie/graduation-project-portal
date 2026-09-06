@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema, type RegisterInput } from "@/lib/validations/auth";
 import { createClient } from "@/lib/supabase/client";
@@ -10,15 +10,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function RegisterForm() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterInput>({ resolver: zodResolver(registerSchema) });
+  } = useForm<RegisterInput>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { requestedRole: "student" },
+  });
 
   async function onSubmit(values: RegisterInput) {
     setServerError(null);
@@ -26,7 +37,12 @@ export function RegisterForm() {
     const { error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
-      options: { data: { full_name: values.fullName } },
+      options: {
+        data: {
+          full_name: values.fullName,
+          requested_role: values.requestedRole,
+        },
+      },
     });
 
     if (error) {
@@ -44,6 +60,26 @@ export function RegisterForm() {
           <AlertDescription>{serverError}</AlertDescription>
         </Alert>
       )}
+      <div className="space-y-2">
+        <Label htmlFor="role">I&apos;m joining as a</Label>
+        <Controller
+          name="requestedRole"
+          control={control}
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger id="role" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="student">Student (team member)</SelectItem>
+                <SelectItem value="advisor">
+                  Advisor (project supervisor)
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </div>
       <div className="space-y-2">
         <Label htmlFor="full_name">Full name</Label>
         <Input
@@ -85,8 +121,8 @@ export function RegisterForm() {
         {isSubmitting ? "Creating account..." : "Create account"}
       </Button>
       <p className="text-center text-sm text-muted-foreground">
-        New accounts start as a student with no team yet — an admin
-        assigns you to your project team after signing up.
+        Your account has no team yet — an admin assigns you to your
+        project team after signing up.
       </p>
     </form>
   );
