@@ -43,8 +43,43 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Role-based routing (admin/advisor/student area enforcement) is added
-  // in Phase 3 once the `profiles` table and role claim exist.
+  // Soft UX-layer role routing. This is NOT the security boundary — RLS
+  // enforces data access, and each Server Component re-checks the role
+  // itself via requireRole() (see lib/auth/require-role.ts and the Next
+  // 16 proxy.md guidance against relying on Proxy alone for authz).
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const roleHome = profile
+      ? profile.role === "admin"
+        ? "/admin"
+        : profile.role === "advisor"
+          ? "/advisor"
+          : "/student"
+      : "/login";
+
+    if (isPublicPath) {
+      const url = request.nextUrl.clone();
+      url.pathname = roleHome;
+      return NextResponse.redirect(url);
+    }
+
+    const roleAreas = ["/admin", "/advisor", "/student"];
+    const inWrongRoleArea = roleAreas.some(
+      (area) =>
+        request.nextUrl.pathname.startsWith(area) &&
+        !request.nextUrl.pathname.startsWith(roleHome),
+    );
+    if (inWrongRoleArea) {
+      const url = request.nextUrl.clone();
+      url.pathname = roleHome;
+      return NextResponse.redirect(url);
+    }
+  }
 
   return supabaseResponse;
 }
