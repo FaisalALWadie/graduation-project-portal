@@ -35,8 +35,13 @@ Graduation Project Management Portal — status against the master spec.
 - Documentation Vault: upload to Storage (`lib/actions/documents.ts`), auto-incrementing version per title, signed-URL download, `/student` now has a tab nav (Task Board / Documents / Meetings)
 - Fixed a real pre-existing gap: the Phase 2 seed script inserted `documents` rows pointing at storage paths that were never actually uploaded, so Download always 404'd on seed data. `scripts/seed.mjs` now uploads real placeholder files at those exact paths.
 
-## Phase 5 — Advisor Experience ⬜
-Read-only dashboard, Advisor Notes, milestone sign-off via RPC, PDF export.
+## Phase 5 — Advisor Experience ✅
+- `/advisor` overview: completion %, Recharts pie chart of task status distribution, full read-only task list (`components/team/team-progress.tsx` — built reusable so Phase 6 admin composes it, doesn't duplicate it)
+- `/advisor/documents`: same vault UI as students, `canUpload={false}` — reused, not rebuilt
+- `/advisor/notes`: post + view weekly notes (`components/team/advisor-notes.tsx`)
+- `/advisor/sign-off`: Approve/Reject buttons call the `approve_milestone` RPC, never a raw table UPDATE (`components/team/milestone-sign-off.tsx`, reusable with `canApprove` prop for Phase 6)
+- PDF export: real one-page PDF via `@react-pdf/renderer`, generated and downloaded client-side
+- Along the way: migrated `TaskStatusChart` off Recharts' deprecated `Cell` API (per-datum `fill` instead), and fixed a `z.coerce.number()` + react-hook-form generic mismatch (plain `z.number()` + `valueAsNumber` instead)
 
 ## Phase 6 — Admin Experience ⬜
 Team/user management CRUD (create team, assign advisor, add/remove students), composed read-only views reused from advisor (not duplicated).
