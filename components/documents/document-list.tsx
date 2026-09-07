@@ -32,7 +32,7 @@ export function DocumentList({ documents }: { documents: DocumentRow[] }) {
   async function handleDownload(doc: DocumentRow) {
     setDownloadingId(doc.id);
     try {
-      const url = await getDocumentDownloadUrl(doc.file_url);
+      const url = await getDocumentDownloadUrl(doc.id);
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't get download link.");

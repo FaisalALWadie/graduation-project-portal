@@ -61,14 +61,29 @@ export async function uploadDocument(formData: FormData) {
 }
 
 // Any authenticated role with a team may download a document from the
-// vault (students, their advisor, and admin) - RLS on storage.objects
-// still scopes this to the caller's own team regardless.
-export async function getDocumentDownloadUrl(path: string) {
-  await requireProfile();
+// vault (students, their advisor, and admin). storage.objects RLS
+// already scopes createSignedUrl to the caller's own team regardless
+// (verified: a foreign-team path is rejected with "Object not found"),
+// but this takes a documentId rather than a client-supplied storage
+// path and re-checks team_id explicitly - defense-in-depth, and it
+// means a signed URL is never even attempted for a document the caller
+// has no business seeing.
+export async function getDocumentDownloadUrl(documentId: string) {
+  const profile = await requireProfile();
+  if (!profile.team_id) throw new Error("You're not assigned to a team yet.");
+
   const supabase = await createClient();
+  const { data: doc } = await supabase
+    .from("documents")
+    .select("file_url, team_id")
+    .eq("id", documentId)
+    .eq("team_id", profile.team_id)
+    .maybeSingle();
+  if (!doc) throw new Error("Document not found.");
+
   const { data, error } = await supabase.storage
     .from("documents")
-    .createSignedUrl(path, 60);
+    .createSignedUrl(doc.file_url, 60);
   if (error) throw new Error(error.message);
   return data.signedUrl;
 }
