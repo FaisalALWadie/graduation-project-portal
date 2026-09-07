@@ -81,8 +81,16 @@ Verified end-to-end in a real browser: all 15 task bars + 3 milestone flags rend
 
 Note: form inputs already have proper `<Label htmlFor>`/`id` pairing and inline zod error messages throughout (login, register, tasks, documents, notes, meetings, team creation) — that was true going into this phase, not new here.
 
-## Phase 10 — Deployment prep ⬜
-Vercel checklist, env var checklist, final clean `next build`.
+## Phase 10 — Deployment prep ✅
+- `README.md` rewritten from the generic create-next-app boilerplate into real project docs: setup steps, env var table (with exactly where to find each value in Supabase), the deployment checklist below, and demo credentials
+- Verified clean from a cold cache: deleted `.next` entirely and reran `next build` — zero TypeScript/ESLint errors
+- Verified the **production** build actually boots and serves correctly (`next start`, not just `next build`) and ran the full 3-role regression pass against it — zero console errors
+- Security sweep of every tracked file for leaked secrets (API keys, access tokens, DB password) — none found; the only match was the intentionally-public demo password, which is also in the README
+- Confirmed `.env.local` was never committed (only `.env.local.example`)
+- Checked Supabase Auth's Site URL — still `http://localhost:3000` (expected, since nothing is deployed yet). **Action item for after your first deploy:** update Site URL + add the Vercel domain to the redirect allow list in Supabase Dashboard → Authentication → URL Configuration, and consider turning off `mailer_autoconfirm` once real email delivery is configured for use beyond the jury demo.
+- No hardcoded `localhost` references anywhere in application code (only in local dev scripts, which don't ship)
+
+**Still needs you:** actually creating the Vercel project and deploying requires your Vercel account. See the "Deploying to Vercel" section in README.md for the exact steps once you're ready.
 
 ## Known deviations from the original spec
 - **Gantt library:** using `frappe-gantt` instead of `gantt-task-react` — the latter only declares a React 18 peer dependency and conflicts with this project's React 19.
