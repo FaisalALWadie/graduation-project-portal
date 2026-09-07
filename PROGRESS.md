@@ -90,7 +90,7 @@ Note: form inputs already have proper `<Label htmlFor>`/`id` pairing and inline 
 - Checked Supabase Auth's Site URL — still `http://localhost:3000` (expected, since nothing is deployed yet). **Action item for after your first deploy:** update Site URL + add the Vercel domain to the redirect allow list in Supabase Dashboard → Authentication → URL Configuration, and consider turning off `mailer_autoconfirm` once real email delivery is configured for use beyond the jury demo.
 - No hardcoded `localhost` references anywhere in application code (only in local dev scripts, which don't ship)
 
-**Still needs you:** actually creating the Vercel project and deploying requires your Vercel account. See the "Deploying to Vercel" section in README.md for the exact steps once you're ready.
+**Live at:** https://graduation-project-portal.vercel.app — deployed via the Vercel CLI, all 3 env vars set on Production/Preview/Development, Supabase Auth's Site URL and redirect allow list updated to point at this domain. Verified with a real login against the live URL (not just a health check) — zero console errors.
 
 ## Known deviations from the original spec
 - **Gantt library:** using `frappe-gantt` instead of `gantt-task-react` — the latter only declares a React 18 peer dependency and conflicts with this project's React 19.
