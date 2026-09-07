@@ -41,6 +41,12 @@ export function TaskCard({
       {...listeners}
       {...attributes}
       onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
       className={`cursor-pointer touch-none rounded-lg border bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:bg-zinc-900 ${
         isDragging ? "opacity-50" : ""
       }`}

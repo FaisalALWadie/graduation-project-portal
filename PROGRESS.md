@@ -69,8 +69,17 @@ Two real bugs found and fixed while polishing this (this phase got extra scrutin
 
 Verified end-to-end in a real browser: all 15 task bars + 3 milestone flags render at their correct positions and colors, zero console errors, fullscreen toggle doesn't throw.
 
-## Phase 9 — Polish & QA ⬜
-Responsive pass, loading/empty/error states everywhere, accessibility basics, full manual test pass across all three roles.
+## Phase 9 — Polish & QA ✅
+- Removed 3 dead empty route folders left over from Phase 1 scaffolding (`student/kanban`, `advisor/overview`, `advisor/export` — the real pages ended up living one level up)
+- Added `loading.tsx` (dashboard skeleton), `error.tsx` (dashboard + root, both with a "Try again" reset button), `global-error.tsx` (root-layout-level failures), and a custom `not-found.tsx`
+- **Two real responsive bugs found and fixed** via an actual mobile-viewport (375px) Playwright audit, not just a code read-through:
+  1. `NavTabs` (5 items on the advisor) had no overflow handling and forced ~19px of horizontal page overflow on mobile — added `overflow-x-auto` + `shrink-0 whitespace-nowrap` per tab.
+  2. `DashboardHeader` was cramped on mobile (full title + full name + badge + button all fighting for space) — title collapses to "GPP" and the user's name hides below the `sm:` breakpoint.
+  - Re-ran the audit after fixing: all of student/advisor/admin/presentation-mode now render at exactly 375px with zero overflow.
+- Accessibility: audited for `<img>` without alt (none exist), icon-only buttons (all are shadcn library internals, already labeled), and clickable non-button elements — found `TaskCard`'s draggable card div had `onClick` but no keyboard handler; dnd-kit already makes it focusable (`role="button" tabIndex=0`) but a `div` doesn't fire click on Enter/Space the way a real `<button>` does, so added that explicitly.
+- Full regression pass across all three roles at desktop width after all the above changes — zero console errors, verified (via actual DOM class inspection, not just a screenshot glance) that active-tab highlighting is correct.
+
+Note: form inputs already have proper `<Label htmlFor>`/`id` pairing and inline zod error messages throughout (login, register, tasks, documents, notes, meetings, team creation) — that was true going into this phase, not new here.
 
 ## Phase 10 — Deployment prep ⬜
 Vercel checklist, env var checklist, final clean `next build`.

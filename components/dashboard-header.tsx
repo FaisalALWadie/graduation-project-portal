@@ -16,13 +16,18 @@ export function DashboardHeader({
   role: string;
 }) {
   return (
-    <header className="flex items-center justify-between border-b bg-white px-6 py-4 dark:bg-black">
-      <div className="flex items-center gap-3">
-        <span className="font-semibold">Graduation Project Portal</span>
+    <header className="flex items-center justify-between gap-3 border-b bg-white px-4 py-4 sm:px-6 dark:bg-black">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="hidden truncate font-semibold sm:inline">
+          Graduation Project Portal
+        </span>
+        <span className="font-semibold sm:hidden">GPP</span>
         <Badge variant="secondary">{ROLE_LABEL[role] ?? role}</Badge>
       </div>
-      <div className="flex items-center gap-4">
-        <span className="text-sm text-muted-foreground">{fullName}</span>
+      <div className="flex shrink-0 items-center gap-4">
+        <span className="hidden truncate text-sm text-muted-foreground sm:inline">
+          {fullName}
+        </span>
         <form action={signOut}>
           <Button type="submit" variant="outline" size="sm">
             Sign out
