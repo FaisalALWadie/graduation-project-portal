@@ -17,6 +17,7 @@ export default async function AdvisorLayout({
           items={[
             { href: "/advisor", label: "Overview" },
             { href: "/advisor/documents", label: "Documents" },
+            { href: "/advisor/meetings", label: "Meetings" },
             { href: "/advisor/notes", label: "Notes" },
             { href: "/advisor/sign-off", label: "Sign-off" },
           ]}

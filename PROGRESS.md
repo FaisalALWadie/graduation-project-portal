@@ -51,8 +51,12 @@ Graduation Project Management Portal — status against the master spec.
 
 Verified end-to-end: created a second team (then deleted it), approved a milestone from the admin's composed sign-off view (confirmed via DB), and ran a full register → assign → remove cycle on a throwaway account (confirmed `team_id` correctly nulled after removal). Zero console errors throughout.
 
-## Phase 7 — Meeting Logs ⬜
-CRUD, correct per-role visibility.
+## Phase 7 — Meeting Logs ✅
+- `components/team/meeting-logs.tsx` — one shared component, used on `/student/meetings`, `/advisor/meetings`, and composed into `/admin/teams/[teamId]`
+- Either a student or the advisor can log a meeting (matches RLS: `meetings_insert_team` has no role restriction, just team scoping) — `canPost` is `true` on both those pages, `false` for admin's read-only composed view
+- `lib/actions/meetings.ts`: `addMeetingLog` derives `team_id` from the caller's own profile, same pattern as `addAdvisorNote`
+
+Verified end-to-end: student posted a meeting log, immediately visible on the advisor's Meetings tab, and correctly read-only (no post form) on admin's composed team view. Zero console errors.
 
 ## Phase 8 — Presentation Mode ⬜
 Full-screen jury view: completion %, status distribution chart (Recharts), Gantt timeline (`frappe-gantt` — see deviation note below).
