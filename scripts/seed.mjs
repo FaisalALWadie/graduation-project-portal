@@ -151,6 +151,41 @@ await seedIfEmpty("milestones", [
 ]);
 
 console.log("Seeding documents...");
+const SEED_FILES = [
+  {
+    path: `${team.id}/proposal-report-v1.pdf`,
+    contentType: "application/pdf",
+    content:
+      "Waqt: Smart Attendance & Engagement Analytics Platform\nProject Proposal Report (v1)\n\n1. Problem Statement\nManual attendance tracking in university lecture halls is slow, error-prone, and gives no insight into student engagement.\n\n2. Proposed Solution\nA facial-recognition-based attendance system with real-time engagement scoring using head-pose and gaze estimation.\n\n3. Scope\nEnrollment module, real-time capture service, lecturer dashboard, weekly engagement reports.\n\n(Placeholder demo content - replace with the real proposal before the jury presentation.)",
+  },
+  {
+    path: `${team.id}/final-report-v2.pdf`,
+    contentType: "application/pdf",
+    content:
+      "Waqt: Smart Attendance & Engagement Analytics Platform\nFinal Report Draft (v2)\n\nMethodology, system architecture, evaluation results, and future work sections in progress.\n\n(Placeholder demo content - replace with the real report before the jury presentation.)",
+  },
+  {
+    path: `${team.id}/mid-review-slides-v1.pptx`,
+    contentType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    content:
+      "Mid-Progress Review - Slide Outline\n1. Title & Team\n2. Problem & Motivation\n3. Architecture Overview\n4. Demo: Real-Time Attendance Capture\n5. Remaining Work & Timeline\n\n(Placeholder demo content - replace with real slides before the jury presentation.)",
+  },
+  {
+    path: `${team.id}/source-code-v3.zip`,
+    contentType: "application/zip",
+    content:
+      "This placeholder stands in for the source-code-v3.zip archive.\nReplace with the real repository export before the jury presentation.",
+  },
+];
+for (const f of SEED_FILES) {
+  const { error } = await admin.storage
+    .from("documents")
+    .upload(f.path, new Blob([f.content], { type: f.contentType }), {
+      contentType: f.contentType,
+      upsert: true,
+    });
+  if (error) throw error;
+}
 await seedIfEmpty("documents", [
   { team_id: team.id, title: "Project Proposal Report", type: "report", file_url: `${team.id}/proposal-report-v1.pdf`, version: 1, uploaded_by: student1.id },
   { team_id: team.id, title: "Final Report Draft", type: "report", file_url: `${team.id}/final-report-v2.pdf`, version: 2, uploaded_by: student2.id },

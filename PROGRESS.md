@@ -29,11 +29,11 @@ Graduation Project Management Portal — status against the master spec.
 - `requireRole()`/`requireProfile()` (`lib/auth/require-role.ts`) — hard per-page authorization check in every Server Component, not just middleware
 - `lib/supabase/middleware.ts` — soft UX-layer redirect (wrong-role area, or auth pages while logged in)
 
-## Phase 4 — Student Experience 🟡 in progress
-- ✅ Kanban board: drag-and-drop (`@dnd-kit/core`), create/edit/delete tasks, priority + due date + assignee, comments thread, optimistic UI with rollback on failure
-- ✅ Task server actions hardened: explicit team scoping + affected-row checks (defense-in-depth on top of RLS), assignee-must-be-on-team validation
-- ⬜ Documentation Vault (upload to Storage, version list)
-- ⬜ Meeting Logs UI (schema + RLS already support it)
+## Phase 4 — Student Experience ✅
+- Kanban board: drag-and-drop (`@dnd-kit/core`), create/edit/delete tasks, priority + due date + assignee, comments thread, optimistic UI with rollback on failure
+- Task server actions hardened: explicit team scoping + affected-row checks (defense-in-depth on top of RLS), assignee-must-be-on-team validation
+- Documentation Vault: upload to Storage (`lib/actions/documents.ts`), auto-incrementing version per title, signed-URL download, `/student` now has a tab nav (Task Board / Documents / Meetings)
+- Fixed a real pre-existing gap: the Phase 2 seed script inserted `documents` rows pointing at storage paths that were never actually uploaded, so Download always 404'd on seed data. `scripts/seed.mjs` now uploads real placeholder files at those exact paths.
 
 ## Phase 5 — Advisor Experience ⬜
 Read-only dashboard, Advisor Notes, milestone sign-off via RPC, PDF export.
