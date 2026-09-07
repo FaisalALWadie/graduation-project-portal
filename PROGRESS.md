@@ -43,8 +43,13 @@ Graduation Project Management Portal — status against the master spec.
 - PDF export: real one-page PDF via `@react-pdf/renderer`, generated and downloaded client-side
 - Along the way: migrated `TaskStatusChart` off Recharts' deprecated `Cell` API (per-datum `fill` instead), and fixed a `z.coerce.number()` + react-hook-form generic mismatch (plain `z.number()` + `valueAsNumber` instead)
 
-## Phase 6 — Admin Experience ⬜
-Team/user management CRUD (create team, assign advisor, add/remove students), composed read-only views reused from advisor (not duplicated).
+## Phase 6 — Admin Experience ✅
+- `/admin` is now a teams list (supports multiple teams, per spec, even though the demo only uses one) + "Create team" dialog + the existing pending-accounts approval list (assign form now lets you pick which team when more than one exists)
+- `/admin/teams/[teamId]` composes the **exact same** `TeamProgress`, `MilestoneSignOff` (with `canApprove`), `AdvisorNotes` (with `canPost={false}`), and `DocumentsClient` (with `canUpload={false}`) components built in Phase 5 — nothing was rebuilt, only recomposed with different prop flags
+- Roster has a "Remove" button per member (`removeFromTeam` — clears `team_id`, and clears `teams.advisor_id` too if that member was the team's advisor)
+- Fixed two more Base UI API differences while wiring this up: `Select`'s `onValueChange` passes `string | null` (not bare `string`), and `Button` has no `asChild`/`render` prop at all — use the exported `buttonVariants()` directly on a `<Link>` instead
+
+Verified end-to-end: created a second team (then deleted it), approved a milestone from the admin's composed sign-off view (confirmed via DB), and ran a full register → assign → remove cycle on a throwaway account (confirmed `team_id` correctly nulled after removal). Zero console errors throughout.
 
 ## Phase 7 — Meeting Logs ⬜
 CRUD, correct per-role visibility.

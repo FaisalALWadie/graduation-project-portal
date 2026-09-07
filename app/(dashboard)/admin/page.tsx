@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
-import { assignToTeam } from "@/lib/actions/admin";
 import { DashboardHeader } from "@/components/dashboard-header";
+import { CreateTeamDialog } from "@/components/team/create-team-dialog";
+import { AssignToTeamForm } from "@/components/team/assign-to-team-form";
 import {
   Card,
   CardContent,
@@ -10,43 +12,86 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
 export default async function AdminDashboardPage() {
   const profile = await requireRole("admin");
   const supabase = await createClient();
 
-  const { data: team } = await supabase
-    .from("teams")
-    .select("id, project_title")
-    .limit(1)
-    .maybeSingle();
-
-  const { data: pendingProfiles } = await supabase
-    .from("profiles")
-    .select("id, full_name, role, created_at")
-    .is("team_id", null)
-    .order("created_at", { ascending: true });
-
-  const { data: teamMembers } = team
-    ? await supabase
+  const [{ data: teams }, { data: pendingProfiles }, { data: memberCounts }] =
+    await Promise.all([
+      supabase
+        .from("teams")
+        .select("id, project_title, advisor_id")
+        .order("created_at", { ascending: true }),
+      supabase
         .from("profiles")
-        .select("id, full_name, role")
-        .eq("team_id", team.id)
-        .order("role")
-    : { data: [] };
+        .select("id, full_name, role, created_at")
+        .is("team_id", null)
+        .order("created_at", { ascending: true }),
+      supabase.from("profiles").select("id, team_id").not("team_id", "is", null),
+    ]);
+
+  const countByTeam = (memberCounts ?? []).reduce<Record<string, number>>(
+    (acc, p) => {
+      acc[p.team_id!] = (acc[p.team_id!] ?? 0) + 1;
+      return acc;
+    },
+    {},
+  );
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <DashboardHeader fullName={profile.full_name} role={profile.role} />
       <main className="flex-1 space-y-6 p-6">
         <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Teams</CardTitle>
+              <CardDescription>All capstone teams in the portal</CardDescription>
+            </div>
+            <CreateTeamDialog />
+          </CardHeader>
+          <CardContent>
+            {!teams || teams.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No teams yet. Create one to get started.
+              </p>
+            ) : (
+              <ul className="divide-y">
+                {teams.map((t) => (
+                  <li
+                    key={t.id}
+                    className="flex items-center justify-between py-3"
+                  >
+                    <div>
+                      <p className="font-medium">{t.project_title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {countByTeam[t.id] ?? 0} member(s)
+                        {!t.advisor_id && " · no advisor assigned"}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/admin/teams/${t.id}`}
+                      className={buttonVariants({ size: "sm", variant: "outline" })}
+                    >
+                      View
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
           <CardHeader>
             <CardTitle>Accounts awaiting team assignment</CardTitle>
             <CardDescription>
-              New self-registered accounts (students and advisors) land here
-              with no team until you assign them — that&apos;s the approval
-              step. The badge shows what they picked when they signed up.
+              New self-registered accounts (students and advisors) land
+              here with no team until you assign them — that&apos;s the
+              approval step. The badge shows what they picked when they
+              signed up.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -73,43 +118,9 @@ export default async function AdminDashboardPage() {
                         </div>
                         <Badge variant="secondary">{p.role}</Badge>
                       </div>
-                      {team ? (
-                        <form action={assignToTeam.bind(null, p.id, team.id)}>
-                          <Button type="submit" size="sm">
-                            Assign to {team.project_title}
-                          </Button>
-                        </form>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">
-                          No team exists yet
-                        </span>
-                      )}
+                      <AssignToTeamForm profileId={p.id} teams={teams ?? []} />
                     </li>
                   ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{team?.project_title ?? "No team yet"}</CardTitle>
-            <CardDescription>Current team roster</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {!teamMembers || teamMembers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No members yet.</p>
-            ) : (
-              <ul className="divide-y">
-                {teamMembers.map((m) => (
-                  <li
-                    key={m.id}
-                    className="flex items-center justify-between py-3"
-                  >
-                    <span>{m.full_name}</span>
-                    <Badge variant="secondary">{m.role}</Badge>
-                  </li>
-                ))}
               </ul>
             )}
           </CardContent>
