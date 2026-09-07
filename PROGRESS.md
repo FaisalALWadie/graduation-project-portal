@@ -58,8 +58,16 @@ Verified end-to-end: created a second team (then deleted it), approved a milesto
 
 Verified end-to-end: student posted a meeting log, immediately visible on the advisor's Meetings tab, and correctly read-only (no post form) on admin's composed team view. Zero console errors.
 
-## Phase 8 — Presentation Mode ⬜
-Full-screen jury view: completion %, status distribution chart (Recharts), Gantt timeline (`frappe-gantt` — see deviation note below).
+## Phase 8 — Presentation Mode ✅
+- `/presentation-mode` (open to admin/advisor/student) — full-screen distraction-free jury view: project title + advisor name, 3 big stat cards (completion %, total tasks, milestones approved), the Recharts distribution chart, a milestone chip strip, and a real `frappe-gantt` timeline
+- Real browser Fullscreen API toggle (not just CSS) via a "Full screen" button
+- Admin resolves "which team to present" via `?team=<id>` (defaults to the first team) since admin has no `team_id` of their own
+
+Two real bugs found and fixed while polishing this (this phase got extra scrutiny per your request for visual care):
+1. `frappe-gantt`'s own CSS isn't exposed as an importable subpath by its package `exports` map — vendored the file into `styles/frappe-gantt.css` instead of importing from `node_modules`.
+2. The Gantt bars were anchored on `tasks.created_at`, which clusters at seed-insert-time for all 15 rows — every bar collapsed near one point far outside the visible `due_date` range, so the chart looked empty. Re-anchored bars on `due_date` with a per-status duration heuristic instead, and switched view mode from Week to Month so the whole ~8-month project span (including the Nov milestone) fits on screen without scrolling.
+
+Verified end-to-end in a real browser: all 15 task bars + 3 milestone flags render at their correct positions and colors, zero console errors, fullscreen toggle doesn't throw.
 
 ## Phase 9 — Polish & QA ⬜
 Responsive pass, loading/empty/error states everywhere, accessibility basics, full manual test pass across all three roles.
