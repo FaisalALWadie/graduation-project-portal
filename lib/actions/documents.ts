@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole, requireProfile } from "@/lib/auth/require-role";
 import { documentUploadSchema } from "@/lib/validations/document";
+import { sendNotificationEmail } from "@/lib/email";
+import { documentUploadedEmail } from "@/lib/email-templates";
+import { getTeamProjectTitle, getTeamAdvisorEmail } from "@/lib/team-notify";
 
 const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB
 
@@ -58,6 +61,17 @@ export async function uploadDocument(formData: FormData) {
   }
 
   revalidatePath("/student/documents");
+
+  const advisorEmail = await getTeamAdvisorEmail(supabase, profile.team_id);
+  if (advisorEmail) {
+    const teamName = await getTeamProjectTitle(supabase, profile.team_id);
+    const { subject, html } = documentUploadedEmail({
+      documentTitle: parsed.title,
+      teamName,
+      uploaderName: profile.full_name,
+    });
+    await sendNotificationEmail({ to: advisorEmail, subject, html });
+  }
 }
 
 // Any authenticated role with a team may download a document from the

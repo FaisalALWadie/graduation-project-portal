@@ -18,6 +18,7 @@ export default async function StudentLayout({
             { href: "/student", label: "Task Board" },
             { href: "/student/documents", label: "Documents" },
             { href: "/student/meetings", label: "Meetings" },
+            { href: "/student/notes", label: "Notes" },
           ]}
         />
       )}

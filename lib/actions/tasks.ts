@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { taskSchema, commentSchema, type TaskInput } from "@/lib/validations/task";
+import { sendNotificationEmail } from "@/lib/email";
+import { taskAssignedEmail, taskStatusChangedEmail } from "@/lib/email-templates";
+import { getTeamProjectTitle, getTeamAdvisorEmail } from "@/lib/team-notify";
 import type { Database } from "@/types/database";
 
 type TaskStatus = Database["public"]["Enums"]["task_status"];
@@ -47,6 +50,23 @@ export async function createTask(input: TaskInput) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/student");
+
+  if (parsed.assignedTo && parsed.assignedTo !== profile.id) {
+    const { data: assignee } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", parsed.assignedTo)
+      .maybeSingle();
+    if (assignee?.email) {
+      const teamName = await getTeamProjectTitle(supabase, profile.team_id);
+      const { subject, html } = taskAssignedEmail({
+        taskTitle: parsed.title,
+        teamName,
+        assignerName: profile.full_name,
+      });
+      await sendNotificationEmail({ to: assignee.email, subject, html });
+    }
+  }
 }
 
 export async function updateTask(taskId: string, input: TaskInput) {
@@ -83,10 +103,23 @@ export async function updateTaskStatus(taskId: string, status: TaskStatus) {
     .update({ status })
     .eq("id", taskId)
     .eq("team_id", profile.team_id)
-    .select("id");
+    .select("id, title");
   if (error) throw new Error(error.message);
   if (!data || data.length === 0) throw new Error("Task not found.");
   revalidatePath("/student");
+
+  if (status === "review" || status === "completed") {
+    const advisorEmail = await getTeamAdvisorEmail(supabase, profile.team_id);
+    if (advisorEmail) {
+      const teamName = await getTeamProjectTitle(supabase, profile.team_id);
+      const { subject, html } = taskStatusChangedEmail({
+        taskTitle: data[0].title,
+        newStatus: status,
+        teamName,
+      });
+      await sendNotificationEmail({ to: advisorEmail, subject, html });
+    }
+  }
 }
 
 export async function deleteTask(taskId: string) {
