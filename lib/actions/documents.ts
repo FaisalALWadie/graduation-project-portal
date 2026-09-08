@@ -7,6 +7,7 @@ import { documentUploadSchema } from "@/lib/validations/document";
 import { sendNotificationEmail } from "@/lib/email";
 import { documentUploadedEmail } from "@/lib/email-templates";
 import { getTeamProjectTitle, getTeamAdvisorEmail } from "@/lib/team-notify";
+import { logActivity } from "@/lib/activity";
 
 const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB
 
@@ -61,6 +62,13 @@ export async function uploadDocument(formData: FormData) {
   }
 
   revalidatePath("/student/documents");
+
+  await logActivity(supabase, {
+    teamId: profile.team_id,
+    actorId: profile.id,
+    actionType: "document_uploaded",
+    description: `${profile.full_name} uploaded "${parsed.title}" (v${nextVersion})`,
+  });
 
   const advisorEmail = await getTeamAdvisorEmail(supabase, profile.team_id);
   if (advisorEmail) {

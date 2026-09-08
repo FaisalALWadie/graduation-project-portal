@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
 import { KanbanBoard } from "@/components/kanban/kanban-board";
+import { ActivityFeed } from "@/components/team/activity-feed";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function StudentDashboardPage() {
@@ -23,7 +24,7 @@ export default async function StudentDashboardPage() {
   }
 
   const supabase = await createClient();
-  const [{ data: tasks }, { data: members }] = await Promise.all([
+  const [{ data: tasks }, { data: members }, { data: activity }] = await Promise.all([
     supabase
       .from("tasks")
       .select("*")
@@ -33,7 +34,18 @@ export default async function StudentDashboardPage() {
       .from("profiles")
       .select("id, full_name, role")
       .eq("team_id", profile.team_id),
+    supabase
+      .from("activity_log")
+      .select("*")
+      .eq("team_id", profile.team_id)
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
 
-  return <KanbanBoard initialTasks={tasks ?? []} members={members ?? []} />;
+  return (
+    <div className="space-y-6">
+      <KanbanBoard initialTasks={tasks ?? []} members={members ?? []} />
+      <ActivityFeed teamId={profile.team_id} initialEntries={activity ?? []} />
+    </div>
+  );
 }

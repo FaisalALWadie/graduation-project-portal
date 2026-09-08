@@ -92,7 +92,7 @@ Note: form inputs already have proper `<Label htmlFor>`/`id` pairing and inline 
 
 **Live at:** https://graduation-project-portal.vercel.app — deployed via the Vercel CLI, all 3 env vars set on Production/Preview/Development, Supabase Auth's Site URL and redirect allow list updated to point at this domain. Verified with a real login against the live URL (not just a health check) — zero console errors.
 
-## Phase 11 — Dark Mode, Email, AI Summary, Mind Map, Activity Feed 🟡 in progress
+## Phase 11 — Dark Mode, Email, AI Summary, Mind Map, Activity Feed ✅
 
 Added as an addendum after Phase 10, slotted in as its own phase per your instruction (not inserted earlier — Phases 1–10 above are unchanged).
 
@@ -121,8 +121,12 @@ Used `@xyflow/react` (v12) rather than the `reactflow` package name specifically
 
 Verified end-to-end: seeded content loads with the correct node count, edited a label and added a node, reloaded the page and confirmed both changes persisted in the database, and confirmed the advisor's view has no "Add node" button and its inputs are actually `readonly` in the DOM. Zero console errors.
 
-### Live Activity Feed ⬜
-New `activity_log` table, written from the same server action that performs each action, realtime-subscribed feed component on Student/Advisor Overview and Presentation Mode.
+### Live Activity Feed ✅
+New `activity_log` table (RLS: team-readable/writable like `meeting_logs`, admin bypass), realtime enabled via `alter publication supabase_realtime add table activity_log`. Logged from the same server action that performs each real change (`lib/activity.ts`, best-effort — never breaks the action it's attached to) for all 6 spec'd event types: task created, task status changed, comment added, document uploaded, milestone approved/rejected, advisor note posted. Shown on Student's page (below the Kanban board), Advisor Overview, and prominently in Presentation Mode.
+
+**Found and fixed a real bug while verifying the "two tabs" requirement**, not just assumed it worked: a plain Node script with `@supabase/supabase-js` received cross-user realtime events perfectly, but the same subscription from the browser component never fired — the channel reported `SUBSCRIBED` but silently received nothing. Root cause: `@supabase/ssr`'s browser client resolves the session from cookies asynchronously, so the component was subscribing before the realtime websocket had a JWT attached, and RLS-filtered `postgres_changes` events were being dropped with no error. Fixed by explicitly awaiting `supabase.auth.getSession()` and calling `supabase.realtime.setAuth(token)` before subscribing.
+
+Verified with two separate real logged-in browser sessions: session A sat on Presentation Mode's Live Activity feed, session B (a different student) created a task, and the entry appeared on session A within seconds with **no page reload** — the actual "someone changes a task on one screen, it appears instantly on the presentation screen" moment the spec asked for. Zero console errors.
 
 ## Known deviations from the original spec
 - **Gantt library:** using `frappe-gantt` instead of `gantt-task-react` — the latter only declares a React 18 peer dependency and conflicts with this project's React 19.

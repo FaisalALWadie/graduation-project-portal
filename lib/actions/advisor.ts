@@ -7,6 +7,7 @@ import { advisorNoteSchema, type AdvisorNoteInput } from "@/lib/validations/advi
 import { sendNotificationEmail } from "@/lib/email";
 import { milestoneDecisionEmail, advisorNoteEmail } from "@/lib/email-templates";
 import { getTeamProjectTitle, getTeamMemberEmails } from "@/lib/team-notify";
+import { logActivity } from "@/lib/activity";
 
 export async function addAdvisorNote(input: AdvisorNoteInput) {
   const profile = await requireRole("advisor");
@@ -23,6 +24,13 @@ export async function addAdvisorNote(input: AdvisorNoteInput) {
   if (error) throw new Error(error.message);
   revalidatePath("/advisor/notes");
   revalidatePath("/student/notes");
+
+  await logActivity(supabase, {
+    teamId: profile.team_id,
+    actorId: profile.id,
+    actionType: "note_posted",
+    description: `${profile.full_name} posted a Week ${parsed.weekNumber} advisor note`,
+  });
 
   const teamName = await getTeamProjectTitle(supabase, profile.team_id);
   const memberEmails = await getTeamMemberEmails(supabase, profile.team_id, profile.id);
@@ -52,6 +60,13 @@ export async function approveMilestone(milestoneId: string, newStatus: string) {
   revalidatePath("/admin");
 
   if (data?.team_id) {
+    await logActivity(supabase, {
+      teamId: data.team_id,
+      actorId: profile.id,
+      actionType: "milestone_approved",
+      description: `${profile.full_name} marked "${data.title}" as ${newStatus}`,
+    });
+
     const teamName = await getTeamProjectTitle(supabase, data.team_id);
     const memberEmails = await getTeamMemberEmails(supabase, data.team_id, profile.id);
     if (memberEmails.length > 0) {

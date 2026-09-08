@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { TeamProgress } from "@/components/team/team-progress";
 import { ExportPdfButton } from "@/components/team/export-pdf-button";
 import { WeeklySummary } from "@/components/team/weekly-summary";
+import { ActivityFeed } from "@/components/team/activity-feed";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function AdvisorDashboardPage() {
@@ -25,7 +26,7 @@ export default async function AdvisorDashboardPage() {
   }
 
   const supabase = await createClient();
-  const [{ data: team }, { data: tasks }, { data: members }, { data: milestones }, { data: summaries }] =
+  const [{ data: team }, { data: tasks }, { data: members }, { data: milestones }, { data: summaries }, { data: activity }] =
     await Promise.all([
       supabase
         .from("teams")
@@ -47,6 +48,12 @@ export default async function AdvisorDashboardPage() {
         .select("*")
         .eq("team_id", profile.team_id)
         .order("week_number", { ascending: false }),
+      supabase
+        .from("activity_log")
+        .select("*")
+        .eq("team_id", profile.team_id)
+        .order("created_at", { ascending: false })
+        .limit(20),
     ]);
 
   return (
@@ -69,6 +76,7 @@ export default async function AdvisorDashboardPage() {
         summaries={summaries ?? []}
         canGenerate
       />
+      <ActivityFeed teamId={profile.team_id} initialEntries={activity ?? []} />
     </>
   );
 }

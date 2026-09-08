@@ -7,6 +7,7 @@ import { taskSchema, commentSchema, type TaskInput } from "@/lib/validations/tas
 import { sendNotificationEmail } from "@/lib/email";
 import { taskAssignedEmail, taskStatusChangedEmail } from "@/lib/email-templates";
 import { getTeamProjectTitle, getTeamAdvisorEmail } from "@/lib/team-notify";
+import { logActivity } from "@/lib/activity";
 import type { Database } from "@/types/database";
 
 type TaskStatus = Database["public"]["Enums"]["task_status"];
@@ -50,6 +51,13 @@ export async function createTask(input: TaskInput) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/student");
+
+  await logActivity(supabase, {
+    teamId: profile.team_id,
+    actorId: profile.id,
+    actionType: "task_created",
+    description: `${profile.full_name} created "${parsed.title}"`,
+  });
 
   if (parsed.assignedTo && parsed.assignedTo !== profile.id) {
     const { data: assignee } = await supabase
@@ -108,6 +116,13 @@ export async function updateTaskStatus(taskId: string, status: TaskStatus) {
   if (!data || data.length === 0) throw new Error("Task not found.");
   revalidatePath("/student");
 
+  await logActivity(supabase, {
+    teamId: profile.team_id,
+    actorId: profile.id,
+    actionType: "task_status_changed",
+    description: `${profile.full_name} moved "${data[0].title}" to ${status.replace("_", " ")}`,
+  });
+
   if (status === "review" || status === "completed") {
     const advisorEmail = await getTeamAdvisorEmail(supabase, profile.team_id);
     if (advisorEmail) {
@@ -159,4 +174,11 @@ export async function addComment(taskId: string, content: string) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/student");
+
+  await logActivity(supabase, {
+    teamId: profile.team_id,
+    actorId: profile.id,
+    actionType: "comment_added",
+    description: `${profile.full_name} commented on a task`,
+  });
 }

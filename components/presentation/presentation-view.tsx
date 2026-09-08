@@ -8,7 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TaskStatusChart } from "@/components/charts/task-status-chart";
 import { ProjectGantt } from "@/components/gantt/project-gantt";
+import { ActivityFeed } from "@/components/team/activity-feed";
 import { STATUS_COLUMNS, type Task } from "@/components/kanban/types";
+import type { Database } from "@/types/database";
+
+type ActivityEntry = Database["public"]["Tables"]["activity_log"]["Row"];
 
 const MILESTONE_VARIANT: Record<string, "secondary" | "default" | "destructive" | "outline"> = {
   pending: "outline",
@@ -23,6 +27,8 @@ export function PresentationView({
   milestones,
   members,
   latestSummary,
+  teamId,
+  initialActivity,
   exitHref,
 }: {
   projectTitle: string;
@@ -30,6 +36,8 @@ export function PresentationView({
   milestones: { title: string; status: string; due_date: string | null }[];
   members: { full_name: string; role: string }[];
   latestSummary: { week_number: number; content: string } | null;
+  teamId: string;
+  initialActivity: ActivityEntry[];
   exitHref: string;
 }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -113,6 +121,8 @@ export function PresentationView({
             </p>
           </div>
         </div>
+
+        <ActivityFeed teamId={teamId} initialEntries={initialActivity} />
 
         <div className="rounded-2xl border bg-white p-8 shadow-sm dark:bg-zinc-900">
           <h2 className="mb-4 text-lg font-semibold">Task Distribution</h2>

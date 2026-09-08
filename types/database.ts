@@ -39,6 +39,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action_type: string
+          actor_id: string | null
+          created_at: string
+          description: string
+          id: string
+          team_id: string
+        }
+        Insert: {
+          action_type: string
+          actor_id?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          team_id: string
+        }
+        Update: {
+          action_type?: string
+          actor_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisor_notes: {
         Row: {
           advisor_id: string
