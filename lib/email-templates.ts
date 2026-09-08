@@ -1,12 +1,26 @@
 import { getAppUrl } from "@/lib/email";
 
+// Every value below (task titles, note text, full names, team titles)
+// is user-controlled - a student names their own task, an advisor
+// writes their own note text, anyone sets their own full_name at
+// signup. Escape before interpolating into HTML to prevent HTML
+// injection in the rendered email (phishing/spoofed content risk).
+function esc(value: string | number) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function wrapper(title: string, bodyHtml: string, ctaHref: string, ctaLabel = "Open the portal") {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; color: #18181b;">
-      <h2 style="font-size: 18px; margin-bottom: 12px;">${title}</h2>
+      <h2 style="font-size: 18px; margin-bottom: 12px;">${esc(title)}</h2>
       ${bodyHtml}
       <a href="${getAppUrl()}${ctaHref}" style="display: inline-block; margin-top: 16px; padding: 10px 16px; background: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-size: 14px;">
-        ${ctaLabel}
+        ${esc(ctaLabel)}
       </a>
       <p style="margin-top: 24px; font-size: 12px; color: #71717a;">Graduation Project Management Portal</p>
     </div>
@@ -26,7 +40,7 @@ export function taskAssignedEmail({
     subject: `New task assigned: ${taskTitle}`,
     html: wrapper(
       "You've been assigned a new task",
-      `<p><strong>${assignerName}</strong> assigned you <strong>${taskTitle}</strong> on the <strong>${teamName}</strong> board.</p>`,
+      `<p><strong>${esc(assignerName)}</strong> assigned you <strong>${esc(taskTitle)}</strong> on the <strong>${esc(teamName)}</strong> board.</p>`,
       "/student",
     ),
   };
@@ -46,7 +60,7 @@ export function taskStatusChangedEmail({
     subject: `${teamName}: "${taskTitle}" ${label}`,
     html: wrapper(
       `A task was ${label}`,
-      `<p><strong>${taskTitle}</strong> on <strong>${teamName}</strong> was just ${label.toLowerCase()}.</p>`,
+      `<p><strong>${esc(taskTitle)}</strong> on <strong>${esc(teamName)}</strong> was just ${esc(label.toLowerCase())}.</p>`,
       "/advisor",
     ),
   };
@@ -65,7 +79,7 @@ export function documentUploadedEmail({
     subject: `${teamName}: new document uploaded`,
     html: wrapper(
       "A new document was uploaded",
-      `<p><strong>${uploaderName}</strong> uploaded <strong>${documentTitle}</strong> to the ${teamName} documentation vault.</p>`,
+      `<p><strong>${esc(uploaderName)}</strong> uploaded <strong>${esc(documentTitle)}</strong> to the ${esc(teamName)} documentation vault.</p>`,
       "/advisor/documents",
     ),
   };
@@ -84,7 +98,7 @@ export function milestoneDecisionEmail({
     subject: `${teamName}: ${milestoneTitle} ${status}`,
     html: wrapper(
       `Milestone ${status}`,
-      `<p>Your advisor marked <strong>${milestoneTitle}</strong> as <strong>${status}</strong>.</p>`,
+      `<p>Your advisor marked <strong>${esc(milestoneTitle)}</strong> as <strong>${esc(status)}</strong>.</p>`,
       "/student",
     ),
   };
@@ -103,7 +117,7 @@ export function advisorNoteEmail({
     subject: `${teamName}: new advisor note (Week ${weekNumber})`,
     html: wrapper(
       `New advisor note - Week ${weekNumber}`,
-      `<p>${notePreview}</p>`,
+      `<p>${esc(notePreview).replace(/\n/g, "<br>")}</p>`,
       "/student/notes",
     ),
   };
