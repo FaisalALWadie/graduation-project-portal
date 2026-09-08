@@ -56,14 +56,35 @@ export async function removeFromTeam(profileId: string, teamId: string) {
   revalidatePath(`/admin/teams/${teamId}`);
 }
 
+function daysFromNow(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 export async function createTeam(input: CreateTeamInput) {
   await requireRole("admin");
   const parsed = createTeamSchema.parse(input);
   const supabase = await createClient();
 
-  const { error } = await supabase.from("teams").insert({
-    project_title: parsed.projectTitle,
-  });
+  const { data: team, error } = await supabase
+    .from("teams")
+    .insert({ project_title: parsed.projectTitle })
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
+
+  // Milestones are seeded once, never user-created (see the Phase 2
+  // RLS design) - the demo team got its 3 fixed milestones from
+  // scripts/seed.mjs, but a team created here through the admin UI
+  // never went through that script, so it needs the same seeding done
+  // here or it would have no milestones at all.
+  const { error: milestoneError } = await supabase.from("milestones").insert([
+    { team_id: team.id, title: "Project Proposal", due_date: daysFromNow(14) },
+    { team_id: team.id, title: "Mid-Progress Review", due_date: daysFromNow(56) },
+    { team_id: team.id, title: "Final Defense", due_date: daysFromNow(112) },
+  ]);
+  if (milestoneError) throw new Error(milestoneError.message);
+
   revalidatePath("/admin");
 }
