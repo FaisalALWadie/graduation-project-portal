@@ -19,6 +19,7 @@ export default async function StudentLayout({
             { href: "/student/documents", label: "Documents" },
             { href: "/student/meetings", label: "Meetings" },
             { href: "/student/notes", label: "Notes" },
+            { href: "/student/mindmap", label: "Mind Map" },
           ]}
         />
       )}

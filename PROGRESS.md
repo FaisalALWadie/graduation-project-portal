@@ -114,8 +114,12 @@ New `weekly_summaries` table (RLS: team can read, only advisor/admin can insert)
 
 Verified with a real generation (not a stub): the model produced a summary correctly citing real task names, real due dates, correctly identified two genuinely-overdue tasks and seven due-this-week, and gave a specific recommendation naming actual task titles.
 
-### Mind Map ⬜
-`reactflow`, one per team (`teams.mindmap_data jsonb`), full edit for students (debounced autosave), read-only reuse for advisor/admin. Decision: **own top-level nav item**, not nested under an existing tab — it's a persistent team artifact on par with the Task Board or Documentation Vault, not a sub-view of either.
+### Mind Map ✅
+Used `@xyflow/react` (v12) rather than the `reactflow` package name specifically — React Flow's own team moved development there; `reactflow` v11 is frozen/legacy under the same authors. One per team (`teams.mindmap_data jsonb`). Same RLS problem as milestone approval: row-level RLS can't restrict edits to one column, so a `update_mindmap(team_id, data)` RPC is the only write path, checking `role = 'student'` server-side — and per your spec, this one deliberately has **no admin bypass** (admin is read-only here, unlike everywhere else in the app).
+
+"Mind Map" tab added to both the student and advisor nav bars (not nested under an existing tab, confirming the earlier placement decision), plus composed into admin's team view — same `MindMapCanvas` component reused with `canEdit` true/false, matching every other reuse pattern in this app. Custom editable node type with an inline input + delete button; changes autosave 1s after the last edit. Demo team seeded with a real starter architecture sketch (7 modules connected to a core node, plus a few cross-dependencies) via `scripts/seed.mjs` — not a blank canvas.
+
+Verified end-to-end: seeded content loads with the correct node count, edited a label and added a node, reloaded the page and confirmed both changes persisted in the database, and confirmed the advisor's view has no "Add node" button and its inputs are actually `readonly` in the DOM. Zero console errors.
 
 ### Live Activity Feed ⬜
 New `activity_log` table, written from the same server action that performs each action, realtime-subscribed feed component on Student/Advisor Overview and Presentation Mode.

@@ -9,6 +9,7 @@ import { AdvisorNotes } from "@/components/team/advisor-notes";
 import { MeetingLogs } from "@/components/team/meeting-logs";
 import { DocumentsClient } from "@/components/documents/documents-client";
 import { WeeklySummary } from "@/components/team/weekly-summary";
+import { MindMapCanvas } from "@/components/mindmap/mind-map-canvas";
 import { RemoveFromTeamButton } from "@/components/team/remove-from-team-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +25,7 @@ export default async function AdminTeamDetailPage({
 
   const { data: team } = await supabase
     .from("teams")
-    .select("id, project_title")
+    .select("id, project_title, mindmap_data")
     .eq("id", teamId)
     .maybeSingle();
 
@@ -125,6 +126,8 @@ export default async function AdminTeamDetailPage({
         <DocumentsClient documents={documentsWithUploader} canUpload={false} />
 
         <WeeklySummary teamId={team.id} summaries={summaries ?? []} canGenerate />
+
+        <MindMapCanvas teamId={team.id} data={team.mindmap_data} canEdit={false} />
       </main>
     </div>
   );

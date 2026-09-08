@@ -20,6 +20,7 @@ export default async function AdvisorLayout({
             { href: "/advisor/meetings", label: "Meetings" },
             { href: "/advisor/notes", label: "Notes" },
             { href: "/advisor/sign-off", label: "Sign-off" },
+            { href: "/advisor/mindmap", label: "Mind Map" },
           ]}
         />
       )}

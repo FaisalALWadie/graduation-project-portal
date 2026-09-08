@@ -365,18 +365,21 @@ export type Database = {
           advisor_id: string | null
           created_at: string
           id: string
+          mindmap_data: Json | null
           project_title: string
         }
         Insert: {
           advisor_id?: string | null
           created_at?: string
           id?: string
+          mindmap_data?: Json | null
           project_title: string
         }
         Update: {
           advisor_id?: string | null
           created_at?: string
           id?: string
+          mindmap_data?: Json | null
           project_title?: string
         }
         Relationships: [
@@ -456,6 +459,10 @@ export type Database = {
       }
       get_my_role: { Args: never; Returns: string }
       get_my_team_id: { Args: never; Returns: string }
+      update_mindmap: {
+        Args: { p_data: Json; p_team_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       document_type: "report" | "presentation" | "code" | "other"

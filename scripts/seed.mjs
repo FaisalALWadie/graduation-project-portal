@@ -234,6 +234,41 @@ console.log("Seeding task comments...");
   }
 }
 
+console.log("Seeding starter mind map...");
+{
+  const { data: existing } = await admin.from("teams").select("mindmap_data").eq("id", team.id).single();
+  if (existing?.mindmap_data) {
+    console.log("  mindmap: already seeded, skipping");
+  } else {
+    const centerId = "core";
+    const satellites = [
+      { id: "facial-recognition", label: "Facial Recognition Pipeline", x: 80, y: 40 },
+      { id: "capture", label: "Real-Time Attendance Capture", x: 420, y: 10 },
+      { id: "engagement", label: "Engagement Scoring Model", x: 760, y: 40 },
+      { id: "dashboard", label: "Lecturer Dashboard", x: 820, y: 320 },
+      { id: "enrollment", label: "Student Enrollment", x: 30, y: 320 },
+      { id: "notifications", label: "Notifications & Alerts", x: 420, y: 520 },
+      { id: "reporting", label: "Reporting & PDF Export", x: 760, y: 480 },
+    ];
+    const mindmap_data = {
+      nodes: [
+        { id: centerId, type: "editable", position: { x: 420, y: 250 }, data: { label: "Waqt: Smart Attendance & Engagement Analytics Platform" } },
+        ...satellites.map((s) => ({ id: s.id, type: "editable", position: { x: s.x, y: s.y }, data: { label: s.label } })),
+      ],
+      edges: [
+        ...satellites.map((s) => ({ id: `${centerId}-${s.id}`, source: centerId, target: s.id })),
+        { id: "facial-recognition-capture", source: "facial-recognition", target: "capture" },
+        { id: "capture-engagement", source: "capture", target: "engagement" },
+        { id: "capture-notifications", source: "capture", target: "notifications" },
+        { id: "engagement-reporting", source: "engagement", target: "reporting" },
+      ],
+    };
+    const { error } = await admin.from("teams").update({ mindmap_data }).eq("id", team.id);
+    if (error) throw error;
+    console.log("  mindmap: seeded starter layout");
+  }
+}
+
 console.log("Resetting Mid-Progress Review milestone to its intended demo state (submitted, awaiting advisor approval)...");
 await admin
   .from("milestones")
