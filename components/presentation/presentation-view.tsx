@@ -22,12 +22,14 @@ export function PresentationView({
   tasks,
   milestones,
   members,
+  latestSummary,
   exitHref,
 }: {
   projectTitle: string;
   tasks: Task[];
   milestones: { title: string; status: string; due_date: string | null }[];
   members: { full_name: string; role: string }[];
+  latestSummary: { week_number: number; content: string } | null;
   exitHref: string;
 }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -138,6 +140,17 @@ export function PresentationView({
           <h2 className="mb-4 text-lg font-semibold">Project Timeline</h2>
           <ProjectGantt tasks={tasks} milestones={milestones} />
         </div>
+
+        {latestSummary && (
+          <div className="rounded-2xl border bg-white p-6 shadow-sm dark:bg-zinc-900">
+            <h2 className="mb-4 text-lg font-semibold">
+              AI Weekly Progress Summary — Week {latestSummary.week_number}
+            </h2>
+            <p className="whitespace-pre-line text-muted-foreground">
+              {latestSummary.content}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

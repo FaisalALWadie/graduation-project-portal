@@ -107,8 +107,12 @@ Added as an addendum after Phase 10, slotted in as its own phase per your instru
 ### Email notifications ⬜
 Resend, triggered from server-side action code paths (not client fetch) for: task assigned, task → Review/Completed, document uploaded, milestone approved/rejected, advisor note posted.
 
-### AI Weekly Progress Summary ⬜
-Per your change: **Google Gemini** (`@google/generative-ai`, `gemini-2.0-flash` or newer) instead of Anthropic. Server-only call using real team data; graceful failure handling; stored in a new `weekly_summaries` table, most-recent-first list on Advisor Overview + Presentation Mode.
+### AI Weekly Progress Summary ✅
+Per your change: **Google Gemini** instead of Anthropic. `gemini-2.0-flash` (and even `gemini-2.5-flash`) turned out to be unavailable on this API key/account - confirmed by direct testing - so used `gemini-3.6-flash`, the model Google's own 404 error explicitly pointed to and confirmed working. Also note: the key you gave, despite not matching the usual `AIza...` format, authenticated fine on the first try - that specific concern was a false alarm.
+
+New `weekly_summaries` table (RLS: team can read, only advisor/admin can insert). `lib/actions/summary.ts` gathers real data (task status counts, overdue tasks, tasks due within 7 days, milestones, most recently updated tasks), builds a prompt, and calls Gemini server-side only (`lib/gemini.ts`). Failures (bad key, rate limit, network) are caught and surfaced as a clear error toast - never a crashed page. "Generate Summary" button on Advisor Overview and admin's composed team view; Presentation Mode shows the latest one read-only.
+
+Verified with a real generation (not a stub): the model produced a summary correctly citing real task names, real due dates, correctly identified two genuinely-overdue tasks and seven due-this-week, and gave a specific recommendation naming actual task titles.
 
 ### Mind Map ⬜
 `reactflow`, one per team (`teams.mindmap_data jsonb`), full edit for students (debounced autosave), read-only reuse for advisor/admin. Decision: **own top-level nav item**, not nested under an existing tab — it's a persistent team artifact on par with the Task Board or Documentation Vault, not a sub-view of either.

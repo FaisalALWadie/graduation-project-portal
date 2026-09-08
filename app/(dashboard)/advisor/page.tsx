@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
 import { TeamProgress } from "@/components/team/team-progress";
 import { ExportPdfButton } from "@/components/team/export-pdf-button";
+import { WeeklySummary } from "@/components/team/weekly-summary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function AdvisorDashboardPage() {
@@ -24,7 +25,7 @@ export default async function AdvisorDashboardPage() {
   }
 
   const supabase = await createClient();
-  const [{ data: team }, { data: tasks }, { data: members }, { data: milestones }] =
+  const [{ data: team }, { data: tasks }, { data: members }, { data: milestones }, { data: summaries }] =
     await Promise.all([
       supabase
         .from("teams")
@@ -41,6 +42,11 @@ export default async function AdvisorDashboardPage() {
         .select("title, status, due_date")
         .eq("team_id", profile.team_id)
         .order("due_date"),
+      supabase
+        .from("weekly_summaries")
+        .select("*")
+        .eq("team_id", profile.team_id)
+        .order("week_number", { ascending: false }),
     ]);
 
   return (
@@ -57,6 +63,11 @@ export default async function AdvisorDashboardPage() {
         projectTitle={team?.project_title ?? "Team"}
         tasks={tasks ?? []}
         members={members ?? []}
+      />
+      <WeeklySummary
+        teamId={profile.team_id}
+        summaries={summaries ?? []}
+        canGenerate
       />
     </>
   );

@@ -8,6 +8,7 @@ import { MilestoneSignOff } from "@/components/team/milestone-sign-off";
 import { AdvisorNotes } from "@/components/team/advisor-notes";
 import { MeetingLogs } from "@/components/team/meeting-logs";
 import { DocumentsClient } from "@/components/documents/documents-client";
+import { WeeklySummary } from "@/components/team/weekly-summary";
 import { RemoveFromTeamButton } from "@/components/team/remove-from-team-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,7 @@ export default async function AdminTeamDetailPage({
     { data: notes },
     { data: documents },
     { data: meetingLogs },
+    { data: summaries },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -62,6 +64,11 @@ export default async function AdminTeamDetailPage({
       .select("*")
       .eq("team_id", teamId)
       .order("meeting_date", { ascending: false }),
+    supabase
+      .from("weekly_summaries")
+      .select("*")
+      .eq("team_id", teamId)
+      .order("week_number", { ascending: false }),
   ]);
 
   const documentsWithUploader = (documents ?? []).map((d) => ({
@@ -116,6 +123,8 @@ export default async function AdminTeamDetailPage({
         <MeetingLogs logs={meetingLogs ?? []} canPost={false} />
 
         <DocumentsClient documents={documentsWithUploader} canUpload={false} />
+
+        <WeeklySummary teamId={team.id} summaries={summaries ?? []} canGenerate />
       </main>
     </div>
   );

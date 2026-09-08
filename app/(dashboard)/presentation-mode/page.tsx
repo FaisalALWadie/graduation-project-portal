@@ -40,7 +40,7 @@ export default async function PresentationModePage({
     );
   }
 
-  const [{ data: team }, { data: tasks }, { data: milestones }, { data: members }] =
+  const [{ data: team }, { data: tasks }, { data: milestones }, { data: members }, { data: summaries }] =
     await Promise.all([
       supabase.from("teams").select("project_title").eq("id", teamId).single(),
       supabase.from("tasks").select("*").eq("team_id", teamId),
@@ -53,6 +53,12 @@ export default async function PresentationModePage({
         .from("profiles")
         .select("full_name, role")
         .eq("team_id", teamId),
+      supabase
+        .from("weekly_summaries")
+        .select("*")
+        .eq("team_id", teamId)
+        .order("week_number", { ascending: false })
+        .limit(1),
     ]);
 
   return (
@@ -61,6 +67,7 @@ export default async function PresentationModePage({
       tasks={tasks ?? []}
       milestones={milestones ?? []}
       members={members ?? []}
+      latestSummary={summaries?.[0] ?? null}
       exitHref={roleHome(profile.role)}
     />
   );

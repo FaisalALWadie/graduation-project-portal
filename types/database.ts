@@ -389,6 +389,48 @@ export type Database = {
           },
         ]
       }
+      weekly_summaries: {
+        Row: {
+          content: string
+          generated_at: string
+          generated_by: string | null
+          id: string
+          team_id: string
+          week_number: number
+        }
+        Insert: {
+          content: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          team_id: string
+          week_number: number
+        }
+        Update: {
+          content?: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          team_id?: string
+          week_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_summaries_generated_by_fkey"
+            columns: ["generated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_summaries_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
