@@ -92,6 +92,30 @@ Note: form inputs already have proper `<Label htmlFor>`/`id` pairing and inline 
 
 **Live at:** https://graduation-project-portal.vercel.app — deployed via the Vercel CLI, all 3 env vars set on Production/Preview/Development, Supabase Auth's Site URL and redirect allow list updated to point at this domain. Verified with a real login against the live URL (not just a health check) — zero console errors.
 
+## Phase 11 — Dark Mode, Email, AI Summary, Mind Map, Activity Feed 🟡 in progress
+
+Added as an addendum after Phase 10, slotted in as its own phase per your instruction (not inserted earlier — Phases 1–10 above are unchanged).
+
+### Dark mode ✅
+- `next-themes` (already present from shadcn init) wired up: `ThemeProvider` in the root layout with `attribute={["class", "data-theme"]}`, `defaultTheme="system"`, `enableSystem`
+- Toggle button (`components/theme-toggle.tsx`, sun/moon) added to `DashboardHeader` (every dashboard route) and Presentation Mode's own header bar
+- This app's Tailwind v4 setup already had a full `.dark { ... }` CSS variable palette and `@custom-variant dark (&:is(.dark *))` from shadcn's init — no theme system had to be built, just connected
+- `frappe-gantt`'s vendored CSS turned out to already ship `html[data-theme=dark]` variables — setting `data-theme` alongside `class` made the Gantt chart themed correctly for free, no custom override CSS needed (the spec assumed this would be required; it wasn't, for this library version)
+- Verified visually (Playwright, `colorScheme: "dark"`) across Student Kanban + Documents, Advisor Overview (chart + tasks), Admin's composed team view (roster/progress/milestones/notes/meetings/documents all in one), Presentation Mode (stat cards/chart/Gantt), and the login page — all readable, zero console errors, zero real contrast issues
+- One real ESLint fixed: the newer `react-hooks/set-state-in-effect` rule flags next-themes' own documented mount-guard pattern; suppressed with a one-line justified comment rather than contorting the code
+
+### Email notifications ⬜
+Resend, triggered from server-side action code paths (not client fetch) for: task assigned, task → Review/Completed, document uploaded, milestone approved/rejected, advisor note posted.
+
+### AI Weekly Progress Summary ⬜
+Per your change: **Google Gemini** (`@google/generative-ai`, `gemini-2.0-flash` or newer) instead of Anthropic. Server-only call using real team data; graceful failure handling; stored in a new `weekly_summaries` table, most-recent-first list on Advisor Overview + Presentation Mode.
+
+### Mind Map ⬜
+`reactflow`, one per team (`teams.mindmap_data jsonb`), full edit for students (debounced autosave), read-only reuse for advisor/admin. Decision: **own top-level nav item**, not nested under an existing tab — it's a persistent team artifact on par with the Task Board or Documentation Vault, not a sub-view of either.
+
+### Live Activity Feed ⬜
+New `activity_log` table, written from the same server action that performs each action, realtime-subscribed feed component on Student/Advisor Overview and Presentation Mode.
+
 ## Known deviations from the original spec
 - **Gantt library:** using `frappe-gantt` instead of `gantt-task-react` — the latter only declares a React 18 peer dependency and conflicts with this project's React 19.
 - **RPC hardening:** `approve_milestone` returns the updated row (not `void`) and sets `search_path = public` explicitly on all `SECURITY DEFINER` functions — a Postgres best practice against search_path hijacking that the spec's snippet omitted.

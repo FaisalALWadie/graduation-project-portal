@@ -1,6 +1,7 @@
 import { signOut } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const ROLE_LABEL: Record<string, string> = {
   admin: "Admin",
@@ -28,6 +29,7 @@ export function DashboardHeader({
         <span className="hidden truncate text-sm text-muted-foreground sm:inline">
           {fullName}
         </span>
+        <ThemeToggle />
         <form action={signOut}>
           <Button type="submit" variant="outline" size="sm">
             Sign out

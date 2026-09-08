@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Maximize, Minimize, X } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { TaskStatusChart } from "@/components/charts/task-status-chart";
 import { ProjectGantt } from "@/components/gantt/project-gantt";
 import { STATUS_COLUMNS, type Task } from "@/components/kanban/types";
@@ -58,6 +59,7 @@ export function PresentationView({
           Presentation Mode
         </span>
         <div className="flex gap-2">
+          <ThemeToggle />
           <Button variant="outline" size="sm" onClick={toggleFullscreen}>
             {isFullscreen ? (
               <Minimize className="size-4" />
