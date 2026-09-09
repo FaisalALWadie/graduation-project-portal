@@ -9,20 +9,22 @@ export async function assignToTeam(profileId: string, teamId: string) {
   await requireRole("admin");
   const supabase = await createClient();
 
-  const { data: pendingProfile, error: fetchError } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", profileId)
-    .single();
-  if (fetchError) throw new Error(fetchError.message);
-
-  const { error } = await supabase
+  // Combines what used to be a separate "fetch role" query and the
+  // team_id update into one round trip - .update().select() returns
+  // the full updated row (role included, even though it isn't the
+  // column being changed), so a second SELECT beforehand is
+  // unnecessary. Every round trip here crosses to Supabase's Singapore
+  // region, so cutting one out is a real, measurable latency win, not
+  // just tidiness.
+  const { data: updatedProfile, error } = await supabase
     .from("profiles")
     .update({ team_id: teamId })
-    .eq("id", profileId);
+    .eq("id", profileId)
+    .select("role")
+    .single();
   if (error) throw new Error(error.message);
 
-  if (pendingProfile.role === "advisor") {
+  if (updatedProfile.role === "advisor") {
     const { error: advisorError } = await supabase
       .from("teams")
       .update({ advisor_id: profileId })
