@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Database } from "@/types/database";
 
 type Note = Database["public"]["Tables"]["advisor_notes"]["Row"];
@@ -24,6 +25,7 @@ export function AdvisorNotes({
 }) {
   const [isPending, startTransition] = useTransition();
   const [localNotes, setLocalNotes] = useState(notes);
+  const [notifyTeam, setNotifyTeam] = useState(true);
   const formRef = useRef<HTMLFormElement>(null);
   const {
     register,
@@ -35,7 +37,7 @@ export function AdvisorNotes({
   function onSubmit(values: AdvisorNoteInput) {
     startTransition(async () => {
       try {
-        await addAdvisorNote(values);
+        const result = await addAdvisorNote(values, notifyTeam);
         setLocalNotes((prev) => [
           {
             id: crypto.randomUUID(),
@@ -48,7 +50,25 @@ export function AdvisorNotes({
           ...prev,
         ]);
         reset();
-        toast.success("Note posted.");
+
+        switch (result.status) {
+          case "sent":
+            toast.success(
+              `Note posted. Email sent to ${result.recipientCount} team member${result.recipientCount === 1 ? "" : "s"}.`,
+            );
+            break;
+          case "failed":
+            toast.warning(
+              `Note posted, but the email didn't go out: ${result.error}`,
+            );
+            break;
+          case "no_recipients":
+            toast.success("Note posted. No other team members to notify yet.");
+            break;
+          case "skipped":
+            toast.success("Note posted. Team was not emailed.");
+            break;
+        }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Couldn't post note.");
       }
@@ -92,8 +112,24 @@ export function AdvisorNotes({
                   )}
                 </div>
               </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="notifyTeam"
+                  checked={notifyTeam}
+                  onCheckedChange={(checked) => setNotifyTeam(checked === true)}
+                />
+                <Label htmlFor="notifyTeam" className="font-normal text-muted-foreground">
+                  Email the team when this note is posted
+                </Label>
+              </div>
               <Button type="submit" disabled={isPending}>
-                {isPending ? "Posting..." : "Post note"}
+                {isPending
+                  ? notifyTeam
+                    ? "Posting & sending email..."
+                    : "Posting..."
+                  : notifyTeam
+                    ? "Post & notify team"
+                    : "Post note"}
               </Button>
             </form>
           </CardContent>

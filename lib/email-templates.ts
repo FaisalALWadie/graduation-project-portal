@@ -46,6 +46,25 @@ export function taskAssignedEmail({
   };
 }
 
+export function taskCreatedEmail({
+  taskTitle,
+  teamName,
+  creatorName,
+}: {
+  taskTitle: string;
+  teamName: string;
+  creatorName: string;
+}) {
+  return {
+    subject: `${teamName}: new task added - ${taskTitle}`,
+    html: wrapper(
+      "A new task was added to the board",
+      `<p><strong>${esc(creatorName)}</strong> added <strong>${esc(taskTitle)}</strong> to the <strong>${esc(teamName)}</strong> task board.</p>`,
+      "/student",
+    ),
+  };
+}
+
 export function taskStatusChangedEmail({
   taskTitle,
   newStatus,

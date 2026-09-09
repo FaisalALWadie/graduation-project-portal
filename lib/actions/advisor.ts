@@ -9,7 +9,16 @@ import { milestoneDecisionEmail, advisorNoteEmail } from "@/lib/email-templates"
 import { getTeamProjectTitle, getTeamMemberEmails } from "@/lib/team-notify";
 import { logActivity } from "@/lib/activity";
 
-export async function addAdvisorNote(input: AdvisorNoteInput) {
+export type NotifyResult =
+  | { status: "skipped" }
+  | { status: "no_recipients" }
+  | { status: "sent"; recipientCount: number }
+  | { status: "failed"; recipientCount: number; error: string };
+
+export async function addAdvisorNote(
+  input: AdvisorNoteInput,
+  notify: boolean,
+): Promise<NotifyResult> {
   const profile = await requireRole("advisor");
   if (!profile.team_id) throw new Error("You're not assigned to a team yet.");
   const parsed = advisorNoteSchema.parse(input);
@@ -32,16 +41,22 @@ export async function addAdvisorNote(input: AdvisorNoteInput) {
     description: `${profile.full_name} posted a Week ${parsed.weekNumber} advisor note`,
   });
 
+  if (!notify) return { status: "skipped" };
+
   const teamName = await getTeamProjectTitle(supabase, profile.team_id);
   const memberEmails = await getTeamMemberEmails(supabase, profile.team_id, profile.id);
-  if (memberEmails.length > 0) {
-    const { subject, html } = advisorNoteEmail({
-      weekNumber: parsed.weekNumber,
-      teamName,
-      notePreview: parsed.note,
-    });
-    await sendNotificationEmail({ to: memberEmails, subject, html });
+  if (memberEmails.length === 0) return { status: "no_recipients" };
+
+  const { subject, html } = advisorNoteEmail({
+    weekNumber: parsed.weekNumber,
+    teamName,
+    notePreview: parsed.note,
+  });
+  const result = await sendNotificationEmail({ to: memberEmails, subject, html });
+  if (!result.success) {
+    return { status: "failed", recipientCount: memberEmails.length, error: result.error };
   }
+  return { status: "sent", recipientCount: memberEmails.length };
 }
 
 // Admin can also approve/reject (the RPC itself checks this - see

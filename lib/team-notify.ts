@@ -31,3 +31,17 @@ export async function getTeamMemberEmails(supabase: Client, teamId: string, excl
     .filter((p) => p.id !== excludeId)
     .map((p) => p.email);
 }
+
+export async function getTeammateEmailsExcludingAdvisor(
+  supabase: Client,
+  teamId: string,
+  excludeId: string,
+) {
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, email, role")
+    .eq("team_id", teamId);
+  return (data ?? [])
+    .filter((p) => p.id !== excludeId && p.role !== "advisor")
+    .map((p) => p.email);
+}

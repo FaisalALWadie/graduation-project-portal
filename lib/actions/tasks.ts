@@ -5,8 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { taskSchema, commentSchema, type TaskInput } from "@/lib/validations/task";
 import { sendNotificationEmail } from "@/lib/email";
-import { taskAssignedEmail, taskStatusChangedEmail } from "@/lib/email-templates";
-import { getTeamProjectTitle, getTeamAdvisorEmail } from "@/lib/team-notify";
+import { taskAssignedEmail, taskCreatedEmail, taskStatusChangedEmail } from "@/lib/email-templates";
+import {
+  getTeamProjectTitle,
+  getTeamAdvisorEmail,
+  getTeammateEmailsExcludingAdvisor,
+} from "@/lib/team-notify";
 import { logActivity } from "@/lib/activity";
 import type { Database } from "@/types/database";
 
@@ -59,6 +63,9 @@ export async function createTask(input: TaskInput) {
     description: `${profile.full_name} created "${parsed.title}"`,
   });
 
+  const teamName = await getTeamProjectTitle(supabase, profile.team_id);
+
+  let assigneeEmail: string | null = null;
   if (parsed.assignedTo && parsed.assignedTo !== profile.id) {
     const { data: assignee } = await supabase
       .from("profiles")
@@ -66,7 +73,7 @@ export async function createTask(input: TaskInput) {
       .eq("id", parsed.assignedTo)
       .maybeSingle();
     if (assignee?.email) {
-      const teamName = await getTeamProjectTitle(supabase, profile.team_id);
+      assigneeEmail = assignee.email;
       const { subject, html } = taskAssignedEmail({
         taskTitle: parsed.title,
         teamName,
@@ -74,6 +81,27 @@ export async function createTask(input: TaskInput) {
       });
       await sendNotificationEmail({ to: assignee.email, subject, html });
     }
+  }
+
+  // Broadcast to the rest of the team: everyone except the creator, the
+  // advisor (notified separately when a task reaches Review/Completed,
+  // not on every creation), and the assignee (who already got the more
+  // specific "assigned to you" email above).
+  const teammateEmails = await getTeammateEmailsExcludingAdvisor(
+    supabase,
+    profile.team_id,
+    profile.id,
+  );
+  const broadcastEmails = teammateEmails.filter(
+    (email): email is string => !!email && email !== assigneeEmail,
+  );
+  if (broadcastEmails.length > 0) {
+    const { subject, html } = taskCreatedEmail({
+      taskTitle: parsed.title,
+      teamName,
+      creatorName: profile.full_name,
+    });
+    await sendNotificationEmail({ to: broadcastEmails, subject, html });
   }
 }
 
