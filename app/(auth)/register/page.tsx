@@ -7,8 +7,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { RegisterForm } from "@/components/forms/register-form";
+import { redirectIfAuthenticated } from "@/lib/auth/require-role";
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  await redirectIfAuthenticated();
   return (
     <div className="flex flex-1 items-center justify-center bg-zinc-50 p-6 dark:bg-black">
       <Card className="w-full max-w-sm">

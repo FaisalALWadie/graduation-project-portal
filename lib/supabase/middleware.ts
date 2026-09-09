@@ -5,6 +5,18 @@ import { env } from "@/lib/env";
 
 const PUBLIC_PATHS = ["/login", "/register"];
 
+// This used to also fetch the caller's profile/role on every single
+// authenticated request, purely to redirect wrong-role visitors and
+// bounce already-logged-in users away from /login. That was a fully
+// redundant database round trip: every dashboard page already does
+// its own hard requireRole()/requireProfile() check (Next 16's own
+// proxy.md explicitly warns against relying on Proxy alone for
+// authorization), and /login and /register now do their own light
+// redirectIfAuthenticated() check directly. Removing it here cuts one
+// full round trip (real cost, given the database is in a different
+// region from the app server) from every single navigation, without
+// weakening any actual security boundary - the hard checks are
+// unchanged.
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -41,44 +53,6 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
-  }
-
-  // Soft UX-layer role routing. This is NOT the security boundary — RLS
-  // enforces data access, and each Server Component re-checks the role
-  // itself via requireRole() (see lib/auth/require-role.ts and the Next
-  // 16 proxy.md guidance against relying on Proxy alone for authz).
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    const roleHome = profile
-      ? profile.role === "admin"
-        ? "/admin"
-        : profile.role === "advisor"
-          ? "/advisor"
-          : "/student"
-      : "/login";
-
-    if (isPublicPath) {
-      const url = request.nextUrl.clone();
-      url.pathname = roleHome;
-      return NextResponse.redirect(url);
-    }
-
-    const roleAreas = ["/admin", "/advisor", "/student"];
-    const inWrongRoleArea = roleAreas.some(
-      (area) =>
-        request.nextUrl.pathname.startsWith(area) &&
-        !request.nextUrl.pathname.startsWith(roleHome),
-    );
-    if (inWrongRoleArea) {
-      const url = request.nextUrl.clone();
-      url.pathname = roleHome;
-      return NextResponse.redirect(url);
-    }
   }
 
   return supabaseResponse;

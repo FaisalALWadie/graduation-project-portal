@@ -48,3 +48,23 @@ export async function requireRole(role: Role) {
   }
   return profile;
 }
+
+// For /login and /register only: bounces an already-authenticated
+// visitor straight to their dashboard. Middleware used to do this
+// check on every single navigation (a redundant profile fetch on top
+// of each page's own requireRole/requireProfile) - moved here so the
+// cost only applies on these two specific pages instead of globally.
+export async function redirectIfAuthenticated() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profile) redirect(roleHome(profile.role));
+}

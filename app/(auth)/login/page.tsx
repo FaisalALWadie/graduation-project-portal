@@ -7,12 +7,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { LoginForm } from "@/components/forms/login-form";
+import { redirectIfAuthenticated } from "@/lib/auth/require-role";
 
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ registered?: string }>;
 }) {
+  await redirectIfAuthenticated();
   const { registered } = await searchParams;
 
   return (

@@ -23,15 +23,8 @@ export default async function AdminTeamDetailPage({
   const { teamId } = await params;
   const supabase = await createClient();
 
-  const { data: team } = await supabase
-    .from("teams")
-    .select("id, project_title, mindmap_data")
-    .eq("id", teamId)
-    .maybeSingle();
-
-  if (!team) notFound();
-
   const [
+    { data: team },
     { data: members },
     { data: tasks },
     { data: milestones },
@@ -40,6 +33,11 @@ export default async function AdminTeamDetailPage({
     { data: meetingLogs },
     { data: summaries },
   ] = await Promise.all([
+    supabase
+      .from("teams")
+      .select("id, project_title, mindmap_data")
+      .eq("id", teamId)
+      .maybeSingle(),
     supabase
       .from("profiles")
       .select("id, full_name, role")
@@ -71,6 +69,8 @@ export default async function AdminTeamDetailPage({
       .eq("team_id", teamId)
       .order("week_number", { ascending: false }),
   ]);
+
+  if (!team) notFound();
 
   const documentsWithUploader = (documents ?? []).map((d) => ({
     ...d,
