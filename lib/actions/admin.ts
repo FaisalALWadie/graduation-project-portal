@@ -1,13 +1,25 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { createTeamSchema, type CreateTeamInput } from "@/lib/validations/team";
 
+const uuidSchema = z.uuid();
+
 export async function assignToTeam(profileId: string, teamId: string) {
   await requireRole("admin");
+  uuidSchema.parse(profileId);
+  uuidSchema.parse(teamId);
   const supabase = await createClient();
+
+  const { data: team } = await supabase
+    .from("teams")
+    .select("id")
+    .eq("id", teamId)
+    .maybeSingle();
+  if (!team) throw new Error("Team not found.");
 
   // Combines what used to be a separate "fetch role" query and the
   // team_id update into one round trip - .update().select() returns
@@ -37,6 +49,8 @@ export async function assignToTeam(profileId: string, teamId: string) {
 
 export async function removeFromTeam(profileId: string, teamId: string) {
   await requireRole("admin");
+  uuidSchema.parse(profileId);
+  uuidSchema.parse(teamId);
   const supabase = await createClient();
 
   const { error } = await supabase

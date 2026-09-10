@@ -78,7 +78,13 @@ export async function uploadDocument(formData: FormData) {
       teamName,
       uploaderName: profile.full_name,
     });
-    await sendNotificationEmail({ to: advisorEmail, subject, html });
+    await sendNotificationEmail({
+      to: advisorEmail,
+      subject,
+      html,
+      supabase,
+      rateLimitKey: `email:${profile.team_id}`,
+    });
   }
 }
 

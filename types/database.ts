@@ -499,6 +499,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      check_rate_limit: {
+        Args: { p_key: string; p_max_count: number; p_window_seconds: number }
+        Returns: boolean
+      }
       get_my_role: { Args: never; Returns: string }
       get_my_team_id: { Args: never; Returns: string }
       update_mindmap: {

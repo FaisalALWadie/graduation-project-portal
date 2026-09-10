@@ -9,6 +9,8 @@ export const taskSchema = z.object({
 });
 export type TaskInput = z.infer<typeof taskSchema>;
 
+export const taskStatusSchema = z.enum(["todo", "in_progress", "review", "completed"]);
+
 export const commentSchema = z.object({
   content: z.string().trim().min(1, "Comment can't be empty"),
 });

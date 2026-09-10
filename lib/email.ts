@@ -1,4 +1,7 @@
 import { Resend } from "resend";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // Sandbox sender - works without a verified custom domain (confirmed by
 // an actual test send during development). Swap for a verified domain
@@ -22,11 +25,34 @@ export async function sendNotificationEmail({
   to,
   subject,
   html,
+  supabase,
+  rateLimitKey,
+  rateLimitMax = 30,
+  rateLimitWindowSeconds = 3600,
 }: {
   to: string | string[];
   subject: string;
   html: string;
+  // Pass supabase + rateLimitKey (typically `email:${teamId}`) to cap
+  // how many notification emails one team can trigger - every caller
+  // here fires on a real user action (note posted, task created, etc)
+  // rather than a fixed batch, so without a cap a team could be used
+  // to spam Resend by repeating that action.
+  supabase?: SupabaseClient<Database>;
+  rateLimitKey?: string;
+  rateLimitMax?: number;
+  rateLimitWindowSeconds?: number;
 }): Promise<EmailResult> {
+  if (supabase && rateLimitKey) {
+    const allowed = await checkRateLimit(supabase, rateLimitKey, rateLimitMax, rateLimitWindowSeconds);
+    if (!allowed) {
+      return {
+        success: false,
+        error: "This team has sent a lot of notification emails recently - try again later.",
+      };
+    }
+  }
+
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.error("RESEND_API_KEY not set - skipping notification email");

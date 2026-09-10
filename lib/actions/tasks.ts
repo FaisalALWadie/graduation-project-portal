@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/require-role";
-import { taskSchema, commentSchema, type TaskInput } from "@/lib/validations/task";
+import { taskSchema, commentSchema, taskStatusSchema, type TaskInput } from "@/lib/validations/task";
 import { sendNotificationEmail } from "@/lib/email";
 import { taskAssignedEmail, taskCreatedEmail, taskStatusChangedEmail } from "@/lib/email-templates";
 import {
@@ -79,7 +79,13 @@ export async function createTask(input: TaskInput) {
         teamName,
         assignerName: profile.full_name,
       });
-      await sendNotificationEmail({ to: assignee.email, subject, html });
+      await sendNotificationEmail({
+        to: assignee.email,
+        subject,
+        html,
+        supabase,
+        rateLimitKey: `email:${profile.team_id}`,
+      });
     }
   }
 
@@ -101,7 +107,13 @@ export async function createTask(input: TaskInput) {
       teamName,
       creatorName: profile.full_name,
     });
-    await sendNotificationEmail({ to: broadcastEmails, subject, html });
+    await sendNotificationEmail({
+      to: broadcastEmails,
+      subject,
+      html,
+      supabase,
+      rateLimitKey: `email:${profile.team_id}`,
+    });
   }
 }
 
@@ -132,11 +144,12 @@ export async function updateTask(taskId: string, input: TaskInput) {
 export async function updateTaskStatus(taskId: string, status: TaskStatus) {
   const profile = await requireRole("student");
   if (!profile.team_id) throw new Error("You're not assigned to a team yet.");
+  const parsedStatus = taskStatusSchema.parse(status);
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("tasks")
-    .update({ status })
+    .update({ status: parsedStatus })
     .eq("id", taskId)
     .eq("team_id", profile.team_id)
     .select("id, title");
@@ -148,19 +161,25 @@ export async function updateTaskStatus(taskId: string, status: TaskStatus) {
     teamId: profile.team_id,
     actorId: profile.id,
     actionType: "task_status_changed",
-    description: `${profile.full_name} moved "${data[0].title}" to ${status.replace("_", " ")}`,
+    description: `${profile.full_name} moved "${data[0].title}" to ${parsedStatus.replace("_", " ")}`,
   });
 
-  if (status === "review" || status === "completed") {
+  if (parsedStatus === "review" || parsedStatus === "completed") {
     const advisorEmail = await getTeamAdvisorEmail(supabase, profile.team_id);
     if (advisorEmail) {
       const teamName = await getTeamProjectTitle(supabase, profile.team_id);
       const { subject, html } = taskStatusChangedEmail({
         taskTitle: data[0].title,
-        newStatus: status,
+        newStatus: parsedStatus,
         teamName,
       });
-      await sendNotificationEmail({ to: advisorEmail, subject, html });
+      await sendNotificationEmail({
+        to: advisorEmail,
+        subject,
+        html,
+        supabase,
+        rateLimitKey: `email:${profile.team_id}`,
+      });
     }
   }
 }

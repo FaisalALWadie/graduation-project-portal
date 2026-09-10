@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth/require-role";
 import { generateWithGemini } from "@/lib/gemini";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { STATUS_COLUMNS } from "@/components/kanban/types";
 
 function weeksSince(dateStr: string) {
@@ -21,6 +22,18 @@ export async function generateWeeklySummary(teamId: string) {
   }
 
   const supabase = await createClient();
+
+  // Every call costs real Gemini API usage - cap both bursts (one
+  // click-storm) and sustained abuse (spread-out but still excessive
+  // over a day) per team, independent of who's clicking.
+  const withinBurstLimit = await checkRateLimit(supabase, `summary:burst:${teamId}`, 1, 300);
+  if (!withinBurstLimit) {
+    throw new Error("A summary was just generated for this team. Try again in a few minutes.");
+  }
+  const withinDailyLimit = await checkRateLimit(supabase, `summary:daily:${teamId}`, 20, 86400);
+  if (!withinDailyLimit) {
+    throw new Error("This team has reached its daily limit for AI summary generation.");
+  }
 
   const [{ data: team }, { data: tasks }, { data: milestones }] = await Promise.all([
     supabase.from("teams").select("project_title, created_at").eq("id", teamId).single(),

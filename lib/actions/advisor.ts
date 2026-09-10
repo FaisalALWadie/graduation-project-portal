@@ -52,7 +52,13 @@ export async function addAdvisorNote(
     teamName,
     notePreview: parsed.note,
   });
-  const result = await sendNotificationEmail({ to: memberEmails, subject, html });
+  const result = await sendNotificationEmail({
+    to: memberEmails,
+    subject,
+    html,
+    supabase,
+    rateLimitKey: `email:${profile.team_id}`,
+  });
   if (!result.success) {
     return { status: "failed", recipientCount: memberEmails.length, error: result.error };
   }
@@ -90,7 +96,13 @@ export async function approveMilestone(milestoneId: string, newStatus: string) {
         status: newStatus,
         teamName,
       });
-      await sendNotificationEmail({ to: memberEmails, subject, html });
+      await sendNotificationEmail({
+        to: memberEmails,
+        subject,
+        html,
+        supabase,
+        rateLimitKey: `email:${data.team_id}`,
+      });
     }
   }
 }
