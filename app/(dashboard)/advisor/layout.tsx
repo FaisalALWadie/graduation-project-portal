@@ -11,7 +11,11 @@ export default async function AdvisorLayout({
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <DashboardHeader fullName={profile.full_name} role={profile.role} />
+      <DashboardHeader
+        fullName={profile.full_name}
+        role={profile.role}
+        teamId={profile.team_id}
+      />
       {profile.team_id && (
         <NavTabs
           items={[

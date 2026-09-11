@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { FileText } from "lucide-react";
 import { getDocumentDownloadUrl } from "@/lib/actions/documents";
@@ -30,6 +31,15 @@ const TYPE_LABEL: Record<string, string> = {
 
 export function DocumentList({ documents }: { documents: DocumentRow[] }) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const highlightedId = searchParams.get("highlightDoc");
+  const highlightedRef = useRef<HTMLTableRowElement>(null);
+
+  useEffect(() => {
+    if (highlightedId && highlightedRef.current) {
+      highlightedRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlightedId]);
 
   async function handleDownload(doc: DocumentRow) {
     setDownloadingId(doc.id);
@@ -68,7 +78,11 @@ export function DocumentList({ documents }: { documents: DocumentRow[] }) {
       </TableHeader>
       <TableBody>
         {documents.map((doc) => (
-          <TableRow key={doc.id}>
+          <TableRow
+            key={doc.id}
+            ref={doc.id === highlightedId ? highlightedRef : undefined}
+            className={doc.id === highlightedId ? "bg-accent ring-2 ring-inset ring-primary" : ""}
+          >
             <TableCell className="font-medium">{doc.title}</TableCell>
             <TableCell>
               <Badge variant="secondary">{TYPE_LABEL[doc.type]}</Badge>

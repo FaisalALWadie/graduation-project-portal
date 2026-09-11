@@ -79,7 +79,7 @@ export default async function AdminTeamDetailPage({
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <DashboardHeader fullName={profile.full_name} role={profile.role} />
+      <DashboardHeader fullName={profile.full_name} role={profile.role} teamId={team.id} />
       <main className="flex-1 space-y-6 p-6">
         <Link href="/admin" className="text-sm text-muted-foreground underline underline-offset-4">
           ← Back to teams

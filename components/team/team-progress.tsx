@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { ListTodo } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +27,16 @@ export function TeamProgress({
     tasks.length === 0
       ? 0
       : Math.round(((counts.completed ?? 0) / tasks.length) * 100);
+
+  const searchParams = useSearchParams();
+  const highlightedId = searchParams.get("highlightTask");
+  const highlightedRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (highlightedId && highlightedRef.current) {
+      highlightedRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlightedId]);
 
   return (
     <div className="space-y-6">
@@ -63,10 +77,14 @@ export function TeamProgress({
                     : urgency === "soon"
                       ? "border-l-4 border-l-amber-500"
                       : "";
+                const isHighlighted = task.id === highlightedId;
                 return (
                   <div
                     key={task.id}
-                    className={`flex flex-wrap items-center justify-between gap-2 py-3 pl-3 ${borderAccent}`}
+                    ref={isHighlighted ? highlightedRef : undefined}
+                    className={`flex flex-wrap items-center justify-between gap-2 py-3 pl-3 ${borderAccent} ${
+                      isHighlighted ? "rounded-md bg-accent ring-2 ring-primary" : ""
+                    }`}
                   >
                     <div>
                       <p className="text-sm font-medium">{task.title}</p>

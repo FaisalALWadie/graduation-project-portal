@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { DndContext, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { toast } from "sonner";
 import { updateTaskStatus } from "@/lib/actions/tasks";
@@ -20,6 +21,8 @@ export function KanbanBoard({
   members: TeamMember[];
   currentUserId: string;
 }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [tasks, setTasks] = useState(initialTasks);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [creating, setCreating] = useState(false);
@@ -27,6 +30,22 @@ export function KanbanBoard({
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
   );
+
+  // Deep-link from global search: /student?openTask=<id> opens that
+  // task's edit dialog, regardless of the current My Tasks/All Team
+  // Tasks filter. Derived directly at render time rather than synced
+  // into state via an effect - clicking a search result while already
+  // on /student is a same-route client-side navigation, so this needs
+  // to react every time searchParams changes, which a plain derived
+  // value already does for free on every render.
+  const openTaskId = searchParams.get("openTask");
+  const deepLinkedTask = openTaskId ? (tasks.find((t) => t.id === openTaskId) ?? null) : null;
+  const editingTask = activeTask ?? deepLinkedTask;
+
+  function closeEditDialog() {
+    setActiveTask(null);
+    if (openTaskId) router.replace("/student");
+  }
 
   const visibleTasks =
     filter === "mine" ? tasks.filter((t) => t.assigned_to === currentUserId) : tasks;
@@ -116,19 +135,19 @@ export function KanbanBoard({
         />
       )}
 
-      {activeTask && (
+      {editingTask && (
         <TaskDialog
           mode="edit"
-          task={activeTask}
+          task={editingTask}
           members={members}
-          onClose={() => setActiveTask(null)}
+          onClose={closeEditDialog}
           onSaved={(task) => {
             setTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)));
-            setActiveTask(null);
+            closeEditDialog();
           }}
           onDeleted={(taskId) => {
             setTasks((prev) => prev.filter((t) => t.id !== taskId));
-            setActiveTask(null);
+            closeEditDialog();
           }}
         />
       )}

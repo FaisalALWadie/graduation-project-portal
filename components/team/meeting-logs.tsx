@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -26,6 +27,16 @@ export function MeetingLogs({
 }) {
   const [isPending, startTransition] = useTransition();
   const [localLogs, setLocalLogs] = useState(logs);
+  const searchParams = useSearchParams();
+  const highlightedId = searchParams.get("highlightMeeting");
+  const highlightedRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (highlightedId && highlightedRef.current) {
+      highlightedRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlightedId]);
+
   const {
     register,
     handleSubmit,
@@ -110,7 +121,13 @@ export function MeetingLogs({
               {localLogs
                 .sort((a, b) => (a.meeting_date < b.meeting_date ? 1 : -1))
                 .map((log) => (
-                  <div key={log.id} className="rounded-lg border p-3">
+                  <div
+                    key={log.id}
+                    ref={log.id === highlightedId ? highlightedRef : undefined}
+                    className={`rounded-lg border p-3 ${
+                      log.id === highlightedId ? "bg-accent ring-2 ring-primary" : ""
+                    }`}
+                  >
                     <p className="text-xs font-medium text-muted-foreground">
                       {new Date(log.meeting_date).toLocaleDateString()}
                     </p>
