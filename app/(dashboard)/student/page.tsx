@@ -44,7 +44,11 @@ export default async function StudentDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <KanbanBoard initialTasks={tasks ?? []} members={members ?? []} />
+      <KanbanBoard
+        initialTasks={tasks ?? []}
+        members={members ?? []}
+        currentUserId={profile.id}
+      />
       <ActivityFeed teamId={profile.team_id} initialEntries={activity ?? []} />
     </div>
   );

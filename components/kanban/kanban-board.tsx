@@ -9,19 +9,27 @@ import { TaskDialog } from "./task-dialog";
 import { Button } from "@/components/ui/button";
 import { STATUS_COLUMNS, type Task, type TeamMember, type TaskStatus } from "./types";
 
+type TaskFilter = "mine" | "all";
+
 export function KanbanBoard({
   initialTasks,
   members,
+  currentUserId,
 }: {
   initialTasks: Task[];
   members: TeamMember[];
+  currentUserId: string;
 }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [creating, setCreating] = useState(false);
+  const [filter, setFilter] = useState<TaskFilter>("mine");
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
   );
+
+  const visibleTasks =
+    filter === "mine" ? tasks.filter((t) => t.assigned_to === currentUserId) : tasks;
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -49,11 +57,37 @@ export function KanbanBoard({
 
   return (
     <div className="flex flex-1 flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Task Board</h2>
-        <Button size="sm" onClick={() => setCreating(true)}>
-          New task
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-heading text-lg font-semibold">Task Board</h2>
+        <div className="flex items-center gap-3">
+          <div className="flex rounded-lg border p-0.5">
+            <button
+              type="button"
+              onClick={() => setFilter("mine")}
+              className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                filter === "mine"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              My Tasks
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter("all")}
+              className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                filter === "all"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              All Team Tasks
+            </button>
+          </div>
+          <Button size="sm" onClick={() => setCreating(true)}>
+            New task
+          </Button>
+        </div>
       </div>
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         <div className="flex gap-4 overflow-x-auto pb-4">
@@ -62,7 +96,7 @@ export function KanbanBoard({
               key={col.id}
               id={col.id}
               label={col.label}
-              tasks={tasks.filter((t) => t.status === col.id)}
+              tasks={visibleTasks.filter((t) => t.status === col.id)}
               members={members}
               onOpenTask={setActiveTask}
             />

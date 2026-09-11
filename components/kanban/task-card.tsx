@@ -2,6 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { Badge } from "@/components/ui/badge";
+import { getDueUrgency, DUE_TEXT_CLASS } from "@/lib/due-date";
 import { PRIORITY_LABEL, type Task, type TeamMember } from "./types";
 
 const PRIORITY_VARIANT: Record<string, "secondary" | "default" | "destructive"> = {
@@ -29,10 +30,13 @@ export function TaskCard({
       }
     : undefined;
 
-  const isOverdue =
-    task.due_date &&
-    task.status !== "completed" &&
-    new Date(task.due_date) < new Date(new Date().toDateString());
+  const urgency = getDueUrgency(task.due_date, task.status);
+  const borderAccent =
+    urgency === "overdue"
+      ? "border-l-4 border-l-destructive"
+      : urgency === "soon"
+        ? "border-l-4 border-l-amber-500"
+        : "";
 
   return (
     <div
@@ -47,7 +51,7 @@ export function TaskCard({
           onOpen();
         }
       }}
-      className={`cursor-pointer touch-none rounded-lg border bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:bg-zinc-900 ${
+      className={`cursor-pointer touch-none rounded-lg border bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:bg-zinc-900 ${borderAccent} ${
         isDragging ? "opacity-50" : ""
       }`}
     >
@@ -57,9 +61,7 @@ export function TaskCard({
           {PRIORITY_LABEL[task.priority]}
         </Badge>
         {task.due_date && (
-          <span
-            className={`text-xs ${isOverdue ? "font-medium text-destructive" : "text-muted-foreground"}`}
-          >
+          <span className={`text-xs ${DUE_TEXT_CLASS[urgency]}`}>
             Due {new Date(task.due_date).toLocaleDateString()}
           </span>
         )}
