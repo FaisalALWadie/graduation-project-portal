@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
 import { TeamProgress } from "@/components/team/team-progress";
+import { WorkloadBalance } from "@/components/team/workload-balance";
 import { ExportPdfButton } from "@/components/team/export-pdf-button";
 import { WeeklySummary } from "@/components/team/weekly-summary";
 import { ActivityFeed } from "@/components/team/activity-feed";
@@ -71,6 +72,7 @@ export default async function AdvisorDashboardPage() {
         tasks={tasks ?? []}
         members={members ?? []}
       />
+      <WorkloadBalance tasks={tasks ?? []} members={members ?? []} />
       <WeeklySummary
         teamId={profile.team_id}
         summaries={summaries ?? []}

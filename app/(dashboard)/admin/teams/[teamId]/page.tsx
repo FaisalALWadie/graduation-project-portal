@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { TeamProgress } from "@/components/team/team-progress";
+import { WorkloadBalance } from "@/components/team/workload-balance";
 import { MilestoneSignOff } from "@/components/team/milestone-sign-off";
 import { AdvisorNotes } from "@/components/team/advisor-notes";
 import { MeetingLogs } from "@/components/team/meeting-logs";
@@ -116,6 +117,8 @@ export default async function AdminTeamDetailPage({
           tasks={tasks ?? []}
           members={members ?? []}
         />
+
+        <WorkloadBalance tasks={tasks ?? []} members={members ?? []} />
 
         <MilestoneSignOff milestones={milestones ?? []} canApprove />
 
