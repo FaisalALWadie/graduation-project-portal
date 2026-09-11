@@ -3,9 +3,11 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Sparkles } from "lucide-react";
 import { generateWeeklySummary } from "@/lib/actions/summary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { Database } from "@/types/database";
 
 type Summary = Database["public"]["Tables"]["weekly_summaries"]["Row"];
@@ -48,9 +50,11 @@ export function WeeklySummary({
       </CardHeader>
       <CardContent>
         {summaries.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No summaries generated yet.
-          </p>
+          <EmptyState
+            icon={Sparkles}
+            title="No summaries generated yet"
+            description="Generate an AI progress summary to see it here."
+          />
         ) : (
           <div className="space-y-4">
             {summaries

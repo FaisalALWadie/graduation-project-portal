@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { CalendarClock } from "lucide-react";
 import { addMeetingLog } from "@/lib/actions/meetings";
 import { meetingLogSchema, type MeetingLogInput } from "@/lib/validations/meeting";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { Database } from "@/types/database";
 
 type MeetingLog = Database["public"]["Tables"]["meeting_logs"]["Row"];
@@ -98,9 +100,11 @@ export function MeetingLogs({
         </CardHeader>
         <CardContent>
           {localLogs.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No meetings logged yet.
-            </p>
+            <EmptyState
+              icon={CalendarClock}
+              title="No meetings logged yet"
+              description="Meeting summaries and decisions will show up here once logged."
+            />
           ) : (
             <div className="space-y-4">
               {localLogs

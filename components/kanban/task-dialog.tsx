@@ -257,7 +257,9 @@ export function TaskDialog({
               {loadingComments ? (
                 <p className="text-sm text-muted-foreground">Loading...</p>
               ) : comments.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No comments yet.</p>
+                <p className="py-3 text-center text-sm text-muted-foreground">
+                  No comments yet — be the first to add one.
+                </p>
               ) : (
                 <div className="space-y-3">
                   {comments.map((c) => (

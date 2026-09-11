@@ -1,7 +1,9 @@
 "use client";
 
 import { PieChart, Pie, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { PieChart as PieChartIcon } from "lucide-react";
 import { STATUS_COLUMNS } from "@/components/kanban/types";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const COLORS: Record<string, string> = {
   todo: "#94a3b8",
@@ -23,9 +25,12 @@ export function TaskStatusChart({
 
   if (data.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        No tasks yet.
-      </p>
+      <EmptyState
+        icon={PieChartIcon}
+        title="No tasks yet"
+        description="Once tasks are created, their status breakdown will show up here."
+        className="py-8"
+      />
     );
   }
 

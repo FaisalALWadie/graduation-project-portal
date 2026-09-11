@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Activity } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { Database } from "@/types/database";
 
 type ActivityEntry = Database["public"]["Tables"]["activity_log"]["Row"];
@@ -73,7 +75,7 @@ export function ActivityFeed({
       </CardHeader>
       <CardContent>
         {entries.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No activity yet.</p>
+          <EmptyState icon={Activity} title="No activity yet" description="Team actions will appear here in real time." />
         ) : (
           <ul className="space-y-3">
             {entries.map((e) => (

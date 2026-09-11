@@ -1,6 +1,8 @@
+import { ListTodo } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TaskStatusChart } from "@/components/charts/task-status-chart";
+import { EmptyState } from "@/components/ui/empty-state";
 import { STATUS_COLUMNS, PRIORITY_LABEL, type Task, type TeamMember } from "@/components/kanban/types";
 
 export function TeamProgress({
@@ -45,7 +47,7 @@ export function TeamProgress({
         </CardHeader>
         <CardContent>
           {tasks.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No tasks yet.</p>
+            <EmptyState icon={ListTodo} title="No tasks yet" />
           ) : (
             <div className="divide-y">
               {tasks.map((task) => {

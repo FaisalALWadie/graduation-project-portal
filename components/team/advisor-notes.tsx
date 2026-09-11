@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { EmptyState } from "@/components/ui/empty-state";
+import { NotebookText } from "lucide-react";
 import type { Database } from "@/types/database";
 
 type Note = Database["public"]["Tables"]["advisor_notes"]["Row"];
@@ -142,7 +144,7 @@ export function AdvisorNotes({
         </CardHeader>
         <CardContent>
           {localNotes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No notes yet.</p>
+            <EmptyState icon={NotebookText} title="No notes yet" />
           ) : (
             <div className="space-y-4">
               {localNotes

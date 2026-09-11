@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { FileText } from "lucide-react";
 import { getDocumentDownloadUrl } from "@/lib/actions/documents";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -43,9 +45,12 @@ export function DocumentList({ documents }: { documents: DocumentRow[] }) {
 
   if (documents.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        No documents uploaded yet.
-      </p>
+      <EmptyState
+        icon={FileText}
+        title="No documents uploaded yet"
+        description="Reports, presentations, and code get versioned here once uploaded."
+        className="py-8"
+      />
     );
   }
 

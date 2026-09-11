@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Maximize, Minimize, X } from "lucide-react";
+import { Maximize, Minimize, X, GraduationCap } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -65,9 +65,14 @@ export function PresentationView({
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-black dark:to-zinc-950">
       <div className="flex items-center justify-between border-b bg-white/80 px-6 py-3 backdrop-blur dark:bg-black/80 print:hidden">
-        <span className="text-sm font-medium text-muted-foreground">
-          Presentation Mode
-        </span>
+        <div className="flex items-center gap-2">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <GraduationCap className="h-3.5 w-3.5" />
+          </div>
+          <span className="text-sm font-medium text-muted-foreground">
+            Presentation Mode
+          </span>
+        </div>
         <div className="flex gap-2">
           <ThemeToggle />
           <Button variant="outline" size="sm" onClick={toggleFullscreen}>
@@ -90,7 +95,7 @@ export function PresentationView({
 
       <div className="mx-auto max-w-5xl space-y-10 px-6 py-12">
         <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight">{projectTitle}</h1>
+          <h1 className="font-heading text-4xl font-bold tracking-tight">{projectTitle}</h1>
           {advisor && (
             <p className="mt-2 text-muted-foreground">
               Supervised by {advisor.full_name}
@@ -108,7 +113,7 @@ export function PresentationView({
             </p>
           </div>
           <div className="rounded-2xl border bg-white p-8 text-center shadow-sm dark:bg-zinc-900">
-            <p className="text-6xl font-bold">{tasks.length}</p>
+            <p className="text-6xl font-bold text-primary">{tasks.length}</p>
             <p className="mt-2 text-sm text-muted-foreground">Total tasks</p>
           </div>
           <div className="rounded-2xl border bg-white p-8 text-center shadow-sm dark:bg-zinc-900">
@@ -125,12 +130,12 @@ export function PresentationView({
         <ActivityFeed teamId={teamId} initialEntries={initialActivity} />
 
         <div className="rounded-2xl border bg-white p-8 shadow-sm dark:bg-zinc-900">
-          <h2 className="mb-4 text-lg font-semibold">Task Distribution</h2>
+          <h2 className="mb-4 font-heading text-lg font-semibold">Task Distribution</h2>
           <TaskStatusChart counts={counts} />
         </div>
 
         <div className="rounded-2xl border bg-white p-6 shadow-sm dark:bg-zinc-900">
-          <h2 className="mb-2 flex items-center justify-between text-lg font-semibold">
+          <h2 className="mb-2 flex items-center justify-between font-heading text-lg font-semibold">
             Milestones
           </h2>
           <div className="flex flex-wrap gap-3">
@@ -147,13 +152,13 @@ export function PresentationView({
         </div>
 
         <div className="rounded-2xl border bg-white p-6 shadow-sm dark:bg-zinc-900">
-          <h2 className="mb-4 text-lg font-semibold">Project Timeline</h2>
+          <h2 className="mb-4 font-heading text-lg font-semibold">Project Timeline</h2>
           <ProjectGantt tasks={tasks} milestones={milestones} />
         </div>
 
         {latestSummary && (
           <div className="rounded-2xl border bg-white p-6 shadow-sm dark:bg-zinc-900">
-            <h2 className="mb-4 text-lg font-semibold">
+            <h2 className="mb-4 font-heading text-lg font-semibold">
               AI Weekly Progress Summary — Week {latestSummary.week_number}
             </h2>
             <p className="whitespace-pre-line text-muted-foreground">

@@ -2,8 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import Gantt from "frappe-gantt";
+import { ChartGantt } from "lucide-react";
 import "@/styles/frappe-gantt.css";
 import type { Task as KanbanTask, TaskStatus } from "@/components/kanban/types";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const STATUS_COLOR: Record<TaskStatus, string> = {
   todo: "#94a3b8",
@@ -106,9 +108,12 @@ export function ProjectGantt({
 
   if (tasks.length === 0 && milestones.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        No tasks or milestones yet.
-      </p>
+      <EmptyState
+        icon={ChartGantt}
+        title="No tasks or milestones yet"
+        description="The project timeline will appear here once work is scheduled."
+        className="py-8"
+      />
     );
   }
 
