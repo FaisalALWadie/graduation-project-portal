@@ -26,6 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import type { AssigneeNotifyResult } from "@/lib/actions/tasks";
 import type { Task, TeamMember, TaskComment } from "./types";
 
 export function TaskDialog({
@@ -47,11 +49,13 @@ export function TaskDialog({
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [loadingComments, setLoadingComments] = useState(mode === "edit");
+  const [notifyAssignee, setNotifyAssignee] = useState(true);
 
   const {
     register,
     control,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<TaskInput>({
     resolver: zodResolver(taskSchema),
@@ -63,6 +67,27 @@ export function TaskDialog({
       dueDate: task?.due_date ?? "",
     },
   });
+
+  const watchedAssignee = watch("assignedTo");
+  const isReassignment = mode === "edit" && watchedAssignee !== (task?.assigned_to ?? null);
+  const showNotifyOption = !!watchedAssignee && (mode === "create" || isReassignment);
+  const assigneeName = members.find((m) => m.id === watchedAssignee)?.full_name ?? "them";
+
+  function describeNotifyResult(result: AssigneeNotifyResult) {
+    switch (result.status) {
+      case "sent":
+        return { message: `Task saved. ${result.assigneeName} was emailed.`, isWarning: false };
+      case "failed":
+        return {
+          message: `Task saved, but the email to ${result.assigneeName} didn't go out: ${result.error}`,
+          isWarning: true,
+        };
+      case "skipped":
+      case "not_applicable":
+      default:
+        return null;
+    }
+  }
 
   useEffect(() => {
     if (mode !== "edit" || !task) return;
@@ -93,8 +118,9 @@ export function TaskDialog({
   function onSubmit(values: TaskInput) {
     startTransition(async () => {
       try {
+        let result: AssigneeNotifyResult;
         if (mode === "create") {
-          await createTask(values);
+          result = await createTask(values, notifyAssignee);
           // The server action doesn't return the row; refetch the newest
           // one via a lightweight optimistic placeholder instead.
           const supabase = createClient();
@@ -106,7 +132,7 @@ export function TaskDialog({
             .single();
           onSaved(data as Task);
         } else if (task) {
-          await updateTask(task.id, values);
+          result = await updateTask(task.id, values, notifyAssignee);
           onSaved({
             ...task,
             title: values.title,
@@ -115,6 +141,16 @@ export function TaskDialog({
             assigned_to: values.assignedTo || null,
             due_date: values.dueDate || null,
           });
+        } else {
+          return;
+        }
+
+        const notice = describeNotifyResult(result);
+        if (notice) {
+          if (notice.isWarning) toast.warning(notice.message);
+          else toast.success(notice.message);
+        } else {
+          toast.success(mode === "create" ? "Task created." : "Task saved.");
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Something went wrong.");
@@ -231,6 +267,19 @@ export function TaskDialog({
             />
           </div>
 
+          {showNotifyOption && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="notifyAssignee"
+                checked={notifyAssignee}
+                onCheckedChange={(checked) => setNotifyAssignee(checked === true)}
+              />
+              <Label htmlFor="notifyAssignee" className="font-normal text-muted-foreground">
+                Email {assigneeName} about this task
+              </Label>
+            </div>
+          )}
+
           <DialogFooter className="flex items-center justify-between sm:justify-between">
             {mode === "edit" ? (
               <Button
@@ -245,7 +294,13 @@ export function TaskDialog({
               <span />
             )}
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Saving..." : "Save"}
+              {isPending
+                ? showNotifyOption && notifyAssignee
+                  ? "Saving & sending email..."
+                  : "Saving..."
+                : showNotifyOption && notifyAssignee
+                  ? "Send & Assign"
+                  : "Save"}
             </Button>
           </DialogFooter>
         </form>

@@ -37,7 +37,65 @@ async function assertAssigneeOnTeam(assignedTo: string | null | undefined, teamI
   if (!data) throw new Error("That person isn't on your team.");
 }
 
-export async function createTask(input: TaskInput) {
+export type AssigneeNotifyResult =
+  | { status: "skipped" }
+  | { status: "not_applicable" }
+  | { status: "sent"; assigneeName: string }
+  | { status: "failed"; assigneeName: string; error: string };
+
+// Shared by createTask and updateTask (reassignment) - both fire the
+// same "you've been assigned" email under the same explicit opt-in
+// checkbox, so the send + result-reporting logic lives in one place.
+async function notifyAssignee({
+  supabase,
+  notify,
+  assignedTo,
+  actorId,
+  actorName,
+  teamId,
+  taskTitle,
+}: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  notify: boolean;
+  assignedTo: string | null;
+  actorId: string;
+  actorName: string;
+  teamId: string;
+  taskTitle: string;
+}): Promise<AssigneeNotifyResult> {
+  if (!assignedTo || assignedTo === actorId) return { status: "not_applicable" };
+  if (!notify) return { status: "skipped" };
+
+  const { data: assignee } = await supabase
+    .from("profiles")
+    .select("email, full_name")
+    .eq("id", assignedTo)
+    .maybeSingle();
+  if (!assignee?.email) return { status: "not_applicable" };
+
+  const teamName = await getTeamProjectTitle(supabase, teamId);
+  const { subject, html } = taskAssignedEmail({
+    taskTitle,
+    teamName,
+    assignerName: actorName,
+  });
+  const result = await sendNotificationEmail({
+    to: assignee.email,
+    subject,
+    html,
+    supabase,
+    rateLimitKey: `email:${teamId}`,
+  });
+  if (!result.success) {
+    return { status: "failed", assigneeName: assignee.full_name, error: result.error };
+  }
+  return { status: "sent", assigneeName: assignee.full_name };
+}
+
+export async function createTask(
+  input: TaskInput,
+  notifyAssigneeFlag: boolean = true,
+): Promise<AssigneeNotifyResult> {
   const profile = await requireRole("student");
   const parsed = taskSchema.parse(input);
   if (!profile.team_id) throw new Error("You're not assigned to a team yet.");
@@ -63,43 +121,28 @@ export async function createTask(input: TaskInput) {
     description: `${profile.full_name} created "${parsed.title}"`,
   });
 
-  const teamName = await getTeamProjectTitle(supabase, profile.team_id);
-
-  let assigneeEmail: string | null = null;
-  if (parsed.assignedTo && parsed.assignedTo !== profile.id) {
-    const { data: assignee } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("id", parsed.assignedTo)
-      .maybeSingle();
-    if (assignee?.email) {
-      assigneeEmail = assignee.email;
-      const { subject, html } = taskAssignedEmail({
-        taskTitle: parsed.title,
-        teamName,
-        assignerName: profile.full_name,
-      });
-      await sendNotificationEmail({
-        to: assignee.email,
-        subject,
-        html,
-        supabase,
-        rateLimitKey: `email:${profile.team_id}`,
-      });
-    }
-  }
+  const assigneeResult = await notifyAssignee({
+    supabase,
+    notify: notifyAssigneeFlag,
+    assignedTo: parsed.assignedTo ?? null,
+    actorId: profile.id,
+    actorName: profile.full_name,
+    teamId: profile.team_id,
+    taskTitle: parsed.title,
+  });
 
   // Broadcast to the rest of the team: everyone except the creator, the
   // advisor (notified separately when a task reaches Review/Completed,
   // not on every creation), and the assignee (who already got the more
-  // specific "assigned to you" email above).
+  // specific "assigned to you" email above, if that was sent).
+  const teamName = await getTeamProjectTitle(supabase, profile.team_id);
   const teammateEmails = await getTeammateEmailsExcludingAdvisor(
     supabase,
     profile.team_id,
     profile.id,
   );
   const broadcastEmails = teammateEmails.filter(
-    (email): email is string => !!email && email !== assigneeEmail,
+    (email): email is string => !!email && email !== parsed.assignedTo,
   );
   if (broadcastEmails.length > 0) {
     const { subject, html } = taskCreatedEmail({
@@ -115,15 +158,30 @@ export async function createTask(input: TaskInput) {
       rateLimitKey: `email:${profile.team_id}`,
     });
   }
+
+  return assigneeResult;
 }
 
-export async function updateTask(taskId: string, input: TaskInput) {
+export async function updateTask(
+  taskId: string,
+  input: TaskInput,
+  notifyAssigneeFlag: boolean = true,
+): Promise<AssigneeNotifyResult> {
   const profile = await requireRole("student");
   const parsed = taskSchema.parse(input);
   if (!profile.team_id) throw new Error("You're not assigned to a team yet.");
   await assertAssigneeOnTeam(parsed.assignedTo, profile.team_id);
 
   const supabase = await createClient();
+  const { data: before } = await supabase
+    .from("tasks")
+    .select("assigned_to")
+    .eq("id", taskId)
+    .eq("team_id", profile.team_id)
+    .maybeSingle();
+  if (!before) throw new Error("Task not found.");
+  const previousAssignee = before.assigned_to;
+
   const { data, error } = await supabase
     .from("tasks")
     .update({
@@ -139,6 +197,20 @@ export async function updateTask(taskId: string, input: TaskInput) {
   if (error) throw new Error(error.message);
   if (!data || data.length === 0) throw new Error("Task not found.");
   revalidatePath("/student");
+
+  const newAssignee = parsed.assignedTo || null;
+  const wasReassigned = newAssignee !== previousAssignee;
+  if (!wasReassigned) return { status: "not_applicable" };
+
+  return notifyAssignee({
+    supabase,
+    notify: notifyAssigneeFlag,
+    assignedTo: newAssignee,
+    actorId: profile.id,
+    actorName: profile.full_name,
+    teamId: profile.team_id,
+    taskTitle: parsed.title,
+  });
 }
 
 export async function updateTaskStatus(taskId: string, status: TaskStatus) {
