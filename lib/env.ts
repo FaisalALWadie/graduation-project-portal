@@ -32,4 +32,7 @@ export const env = {
       "SUPABASE_SERVICE_ROLE_KEY",
     );
   },
+  get cronSecret() {
+    return required(process.env.CRON_SECRET, "CRON_SECRET");
+  },
 };

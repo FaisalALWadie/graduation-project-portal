@@ -65,6 +65,25 @@ export function taskCreatedEmail({
   };
 }
 
+export function taskDeadlineReminderEmail({
+  taskTitle,
+  teamName,
+  dueDate,
+}: {
+  taskTitle: string;
+  teamName: string;
+  dueDate: string;
+}) {
+  return {
+    subject: `Reminder: "${taskTitle}" is due soon`,
+    html: wrapper(
+      "A task you're assigned to is due soon",
+      `<p><strong>${esc(taskTitle)}</strong> on <strong>${esc(teamName)}</strong> is due <strong>${esc(dueDate)}</strong> and isn't marked complete yet.</p>`,
+      "/student",
+    ),
+  };
+}
+
 export function taskStatusChangedEmail({
   taskTitle,
   newStatus,

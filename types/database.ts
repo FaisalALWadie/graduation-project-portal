@@ -346,6 +346,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          last_reminded_at: string | null
           priority: Database["public"]["Enums"]["task_priority"]
           status: Database["public"]["Enums"]["task_status"]
           team_id: string
@@ -359,6 +360,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          last_reminded_at?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           status?: Database["public"]["Enums"]["task_status"]
           team_id: string
@@ -372,6 +374,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          last_reminded_at?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           status?: Database["public"]["Enums"]["task_status"]
           team_id?: string
