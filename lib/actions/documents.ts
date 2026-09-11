@@ -115,3 +115,26 @@ export async function getDocumentDownloadUrl(documentId: string) {
   if (error) throw new Error(error.message);
   return data.signedUrl;
 }
+
+// Same access-control pattern as getDocumentDownloadUrl, but a longer
+// expiry (previewing a PDF/image takes longer than a one-shot
+// download that starts immediately).
+export async function getDocumentPreviewUrl(documentId: string) {
+  const profile = await requireProfile();
+  if (!profile.team_id) throw new Error("You're not assigned to a team yet.");
+
+  const supabase = await createClient();
+  const { data: doc } = await supabase
+    .from("documents")
+    .select("file_url, team_id")
+    .eq("id", documentId)
+    .eq("team_id", profile.team_id)
+    .maybeSingle();
+  if (!doc) throw new Error("Document not found.");
+
+  const { data, error } = await supabase.storage
+    .from("documents")
+    .createSignedUrl(doc.file_url, 300);
+  if (error) throw new Error(error.message);
+  return data.signedUrl;
+}

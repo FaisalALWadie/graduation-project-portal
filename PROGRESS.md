@@ -128,6 +128,45 @@ New `activity_log` table (RLS: team-readable/writable like `meeting_logs`, admin
 
 Verified with two separate real logged-in browser sessions: session A sat on Presentation Mode's Live Activity feed, session B (a different student) created a task, and the entry appeared on session A within seconds with **no page reload** — the actual "someone changes a task on one screen, it appears instantly on the presentation screen" moment the spec asked for. Zero console errors.
 
+## Phase 11b — Performance & Notification Fixes ✅
+
+- **Navigation speed**: `loading.tsx` only existed at the `(dashboard)` route-group level, one segment above `student/layout.tsx` and `advisor/layout.tsx`. Since those layouts stay mounted across sibling-tab navigation (Task Board → Documents, etc.), that Suspense boundary never re-triggered — clicking a tab froze the page with zero feedback for 2+ seconds, confirmed via CDP-throttled Playwright tests. Added `loading.tsx` scoped to `student/`, `advisor/`, and `admin/` so each segment transition actually shows a skeleton (confirmed: skeleton visible at 50ms post-click, vs. previously frozen).
+- Cut a redundant profile/role DB round-trip that middleware ran on every single navigation (moved the "already logged in → redirect from /login" check into `redirectIfAuthenticated()`, used only by `/login` and `/register`); merged one sequential query into an existing `Promise.all` in `admin/teams/[teamId]/page.tsx`.
+- **Advisor Notes "Send & Notify Team"**: explicit checkbox + button (checked by default), `addAdvisorNote` returns a real delivery outcome instead of silently swallowing errors. This surfaced the actual reason team emails weren't landing: the Resend account is in sandbox mode and can only deliver to the account owner's own address until a custom domain is verified - confirmed via a real API call, not assumed.
+- **Task creation now broadcasts to the whole team** (not just the assignee): every other team member gets a "new task added" email, excluding the creator, the assignee (who gets the more specific "assigned to you" email), and the advisor (already notified on Review/Completed).
+
+## Phase 11c — Security Audit ✅
+
+**Server-side validation** (every mutation is a public Server Action endpoint regardless of client-side zod - a direct call bypasses the browser form entirely): audited all mutation functions. Found and fixed three real gaps - `updateMindmap` accepted `data: Json` with zero runtime shape/size check (added `mindmapDataSchema`, capped node/edge arrays), `updateTaskStatus` took a raw string with no validation (added `taskStatusSchema`), `assignToTeam`/`removeFromTeam` had no UUID format or team-exists check. Everything else already validated independently of the client.
+
+**Rate limiting**, backed by a new `check_rate_limit()` Postgres function (one atomic UPSERT, chosen over in-memory counters since Vercel's serverless functions don't share memory across instances - an in-process counter would silently reset every cold start):
+- Gemini summary generation: 1/team/5min + 20/day, checked before the API call.
+- All notification emails: 30/hour/team, wired into every `sendNotificationEmail` call site so one team can't be used to spam Resend regardless of which action triggers it.
+- Login/register bypass the Next.js server entirely (client talks to Supabase Auth directly) - confirmed Supabase's own platform rate limit is active (hit a 429 after ~44 rapid attempts against a live test).
+
+## Phase 12 — Visual Polish, Assignment Notifications, My Tasks, Reminders, Search, Workload, Preview ✅
+
+### Visual design pass ✅
+Deep-blue brand palette (light + dark) replacing the default shadcn grayscale. Fixed a latent bug: `--font-sans` referenced itself (`var(--font-sans)`), so Geist Sans was imported but never actually applied - body text was silently falling back to the browser default the whole time. Added a distinct heading font (Plus Jakarta Sans) that every `CardTitle` picks up for free. Card depth (`shadow-sm`, was a flat ring with none). Brand-colored icon mark in the navbar and Presentation Mode's header. New `EmptyState` component replacing 8 bare "No X yet." lines app-wide.
+
+### "Send & Assign" on task assignment ✅
+Same explicit-notify pattern as Advisor Notes, extended to task creation and reassignment: a checkbox + "Send & Assign" button, `createTask`/`updateTask` return a real delivery outcome (`sent`/`failed`/`skipped`/`not_applicable`) surfaced via toast. `updateTask` now fetches the task's previous `assigned_to` before writing so the email only fires on an actual reassignment. Found and fixed a real bug while testing: the toast initially named the *previous* assignee instead of the new one - a client-side value derived from react-hook-form's `watch()` raced against the reassignment (exactly what React Compiler's own lint warning on `watch()` flags as unsafe). Fixed by having the server return the notified assignee's name, so the toast reflects who was actually emailed rather than a stale client snapshot.
+
+### My Tasks filter + due-date urgency ✅
+Kanban board gets a "My Tasks" / "All Team Tasks" toggle (defaults to My Tasks). New `lib/due-date.ts` classifies every non-completed task as overdue/due-soon(≤2 days)/neutral, applied consistently on Kanban cards and the advisor/admin task list (left-border accent + colored due-date text).
+
+### Deadline reminder cron ✅
+New `/api/cron/deadline-reminders`, daily via `vercel.json` crons, emails the assignee of any non-completed task due in 1-2 days. Protected by `CRON_SECRET` checked against the `Authorization` header. New `last_reminded_at` column prevents re-emailing the same task - verified live: a controlled test task got its one reminder sent and the column set, then a second run correctly excluded it. Found and fixed a real bug: `proxy.ts`'s matcher covered every route except static assets, so it was 307-redirecting the cron's unauthenticated request to `/login` before the route handler ever ran (Vercel's cron caller has no browser session) - excluded `/api/` from the matcher; confirmed page-level auth redirects are unaffected.
+
+### Global search ✅
+Postgres full-text search (generated `tsvector` columns + GIN indexes on tasks/documents/meeting_logs, not `ILIKE`) via `lib/actions/search.ts`. Debounced search bar in the navbar wherever a team context exists. Results grouped by type, each deep-linking to the actual item (tasks open their edit dialog on the Kanban board; documents/meetings scroll-to-and-highlight). Found and fixed two real bugs while wiring the deep-link: a same-route client-side navigation doesn't remount the page component, so a mount-only effect never re-fired for a second search - replaced with a value derived directly from `searchParams` on every render; and the first attempt at that fix synced the derived value into state via `setState` inside an effect body, which `react-hooks/set-state-in-effect` correctly flags - removed the state/effect entirely.
+
+### Workload Balance ✅
+Simple per-member segmented bar (To Do/In Progress/Review/Completed + open/total) on advisor's Overview and admin's composed team view.
+
+### Inline document preview ✅
+"Preview" action for PDFs/images in the Documentation Vault, opening a modal with the file embedded via a signed URL (5-minute expiry vs. download's 60s) - same team-scoped access control as downloads, just a longer-lived link. Other file types stay download-only. Verified image preview end-to-end with a real uploaded PNG (network response 200, `naturalWidth` confirms real pixel data rendered). PDF preview's access control, signed-URL generation, and DOM wiring are verified identically correct, but the actual visual PDF rendering inside the iframe couldn't be screenshotted in this headless testing environment - a real browser's built-in PDF viewer (which headless Chromium's automation build appears to lack for iframe embeds) is expected to render it normally.
+
 ## Known deviations from the original spec
 - **Gantt library:** using `frappe-gantt` instead of `gantt-task-react` — the latter only declares a React 18 peer dependency and conflicts with this project's React 19.
 - **RPC hardening:** `approve_milestone` returns the updated row (not `void`) and sets `search_path = public` explicitly on all `SECURITY DEFINER` functions — a Postgres best practice against search_path hijacking that the spec's snippet omitted.
